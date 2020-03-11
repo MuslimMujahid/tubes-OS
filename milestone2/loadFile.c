@@ -131,7 +131,6 @@ void main(int argc, char* argv[]) {
 
     // mark the sector in the sectors entry
     sectors[sectorindex + sectcount] = i;
-    sectorindex++;
     sectcount++;
 
     printf("Loaded %s to sector %d\n", argv[1], i);
