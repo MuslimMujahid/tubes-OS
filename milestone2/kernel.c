@@ -35,7 +35,7 @@ int div(int a, int b);
 void printChar(char c);
 void printLogo();
 int strCmp(char* str1, char* str2);
-int findFilenameInDir(char* path, char parentIndex);
+findFilenameInDir(char* path, char parentIndex);
 void fileExceptionHandler(int result);
 
 main()
@@ -44,18 +44,17 @@ main()
 	int suc;
 	makeInterrupt21();
 	printLogo();
-	// interrupt(0x21, 0xFF << 8 | 0x4, buffer, "key.txt", &suc);
-    writeFile(buffer, "test.txt", &suc, 0xFF);
+	interrupt(0x21, 0xFF << 8 | 0x4, buffer, "key.txt", &suc);
     fileExceptionHandler(suc);
-	// if (suc == 1)
-	// {
-	// 	interrupt(0x21, 0x0, "Key : ", 0, 0);
-	//  	interrupt(0x21, 0x0, buffer, 0, 0);
-	// }
-	// else
-	// {
-	// 	interrupt(0x21, 0xFF << 8 | 0x6, "milestone1", 0x2000, &suc);
-	// }
+	if (suc == 1)
+	{
+		interrupt(0x21, 0x0, "Key : ", 0, 0);
+	 	interrupt(0x21, 0x0, buffer, 0, 0);
+	}
+	else
+	{
+		interrupt(0x21, 0xFF << 8 | 0x6, "milestone1", 0x2000, &suc);
+	}
 	while (1);
 } 
 
@@ -172,7 +171,9 @@ void writeSector(char *buffer, int sector)
 void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
 {
     int i, j;
-    char map[SECTOR_SIZE], files[SECTOR_SIZE * 2], sectors[SECTOR_SIZE];
+    char map[SECTOR_SIZE];
+    char files[SECTOR_SIZE * 2];
+    char sectors[SECTOR_SIZE];
     int fileIndex;
     int sectorindex;
     int empty_sector;
@@ -187,9 +188,22 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
 
     // Find file in parentIndex
     fileIndex = findFilenameInDir(path, parentIndex);
-    if (fileIndex != FILE_EXIST) // file already exist
+    if (fileIndex != FILE_NOT_FOUND) // file already exist
     {
         *sectors = FILE_EXIST;
+        return;
+    }
+
+
+    // Check if there enough space to store file
+    for (i = 0, empty_sector = 0; i < MAX_BYTE && empty_sector < *sectors; i++)
+    {
+        if (map[i] != USED)
+            empty_sector++;
+    }
+    if (i == MAX_BYTE)
+    {
+        *sectors = SECTORS_FULL;
         return;
     }
 
@@ -213,14 +227,6 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
     }
     sectorindex = i;
 
-    // Check if there enough space to store file
-    for (i = 0, empty_sector = 0; i < MAX_BYTE && empty_sector < *sectors; i++)
-    {
-        if (map[i] != USED)
-            empty_sector++;
-    }
-    if (i == MAX_BYTE) return;
-
     // Put files in the parentIndex
     files[fileIndex] = parentIndex;
 
@@ -235,9 +241,8 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
     while (path[i] != '\0' && i < 14) i++;
     while (path[i] != '/' && i > 0) i--;
     if (path[i] == '/') i += 1;
-    while (path[i] != '\0' && j < 14);
+    while (path[i] != '\0' && j < 14)
         files[fileIndex + NAME_OFFSET + j++] = path[i++];
-
     // Store file 
     for (sectorId = 0, sectorCount = 0; sectorId < MAX_BYTE && sectorCount < *sectors; sectorId++)
     {
@@ -255,6 +260,7 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
             // Write to the empty sector
             for (i = 0; i < SECTOR_SIZE; i++)
                 tmp_buff[i] = buffer[sectorCount * SECTOR_SIZE + i];
+
             writeSector(tmp_buff, sectorId);
 
             sectorCount++;
@@ -266,6 +272,8 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
     writeSector(files, FILES_SECTOR_1);
     writeSector(files + SECTOR_SIZE, FILES_SECTOR_2);
     writeSector(sectors, SECTORS_SECTOR);
+
+    *sectors = 1;
 }
 
 void readFile(char *buffer, char *path, int *result, char parentIndex)
@@ -406,7 +414,7 @@ int findFilenameInDir(char* path, char parentIndex)
 
 void fileExceptionHandler(int result)
 {
-    if (result == FILE_NOT_FOUND)
+    if (result == FILE_NOT_FOUND || result == FILE_EXIST)
     {
         printString("File not found/already exist\n");
     }
