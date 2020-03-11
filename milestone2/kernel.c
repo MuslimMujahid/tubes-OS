@@ -1,10 +1,23 @@
+#define SECTOR_SIZE 512
+#define MAP_SECTOR 1
+#define FILES_SECTOR_1 2
+#define FILES_SECTOR_2 3
+#define SECTORS_SECTOR 4
+#define MAX_BYTE 512
+#define NAME_OFFSET 2
+#define SECTORS_COLUMNS 16
+#define FILES_COLUMNS 16
+#define ROOT 0xFF
+#define USED 0xFF
+#define EMPTY 0x0
+
 void handleInterrupt21 (int AX, int BX, int CX, int DX);
 void printString(char *string);
 void readString(char *string);
 void writeSector(char *buffer, int sector);
 void readSector(char *buffer, int sector);
-void writeFile(char *buffer, char *filename, int *sectors);
-void readFile(char *buffer, char *filename, int *success);
+void writeFile(char *buffer, char *path, int *sectors, char parentIndex);
+void readFile(char *buffer, char *path, int *result, char parentIndex);
 void executeProgram(char *filename, int segment, int *success);
 void clear(char *buffer, int length); 
 int mod(int a, int b);
@@ -51,10 +64,10 @@ void handleInterrupt21 (int AX, int BX, int CX, int DX)
         writeSector(BX, CX);
         break;
       case 0x4:
-        readFile(BX, CX, DX);
+        // readFile(BX, CX, DX);
         break;
       case 0x5:
-        writeFile(BX, CX, DX);
+        // writeFile(BX, CX, DX);
         break;
       case 0x6:
         executeProgram(BX, CX, DX);
@@ -142,159 +155,100 @@ void writeSector(char *buffer, int sector)
       mod(div(sector, 18), 2) * 0x100);
 }
 
-void writeFile(char *buffer, char *filename, int *sectors)
+void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
 {
-    char map[512];
-    char dir[512];
-    char sub_buff[512];
-    int found_empty_dir = 0;
-    int empty_dir_row;
+    int i, j;
+
+    // Read sector map, files, and sectors
+    char map[SECTOR_SIZE], files[SECTOR_SIZE * 2], sectors[SECTOR_SIZE];
+    readSector(map, MAP_SECTOR);
+    readSector(files, FILES_SECTOR_1);
+    readSector(files + SECTOR_SIZE, FILES_SECTOR_2);
+    readSector(sectors, SECTORS_SECTOR);
+
+    // find a free entry in the files
+    for (i = 0; i < SECTOR_SIZE; i += FILES_COLUMNS)
+        if (files[i] == EMPTY) break;
+    if (i == SECTOR_SIZE * 2) return;
+    int fileindex = i;
+
+    // find a free sectors entry
+    for (i = 0; i < SECTOR_SIZE; i += SECTORS_COLUMNS)
+        if (sectors[i] == EMPTY) break;
+    if (i == SECTOR_SIZE) return;
+    int sectorindex = i;
+
+    // Check if there enough space to store file
     int empty_sector;
-    int filename_len;
-    int it, it2, sector_id;
-
-    /* read sector dir */
-    readSector(map, 1);
-    readSector(dir, 2);
-
-    /* check free directory */
-    for (it = 0; it < 16; it++)
+    for (i = 0, empty_sector = 0; i < MAX_BYTE && empty_sector < *sectors; i++)
     {
-        if (dir[32*it] == 0x0)
+        if (map[i] != USED)
+            empty_sector++;
+    }
+    if (i == MAX_BYTE) return;
+
+    // Put files in the parentIndex
+    files[fileindex] = parentIndex;
+
+    // Point the files to the sector
+    files[fileindex + 1] = sectorindex;
+
+    // clear the memory to put name
+    clear(files + fileindex + NAME_OFFSET, 14);
+
+    // Clear memory that will be used to store filename
+    clear(files + fileindex + NAME_OFFSET, 14);
+
+    // Store filename
+    i = 0, j = 0;
+    while (path[i++] != '\0' && i < 14);
+    while (path[i--] != '/' && i > 0);
+    while (path[++i] != '\0' && i < 14);
+        files[fileindex + NAME_OFFSET + j++] = path[i];
+
+    // Store file 
+    int sectorId, sectorCount;
+    char tmp_buff[SECTOR_SIZE];
+    for (sectorId = 0, sectorCount = 0; sectorId < MAX_BYTE && sectorCount < *sectors; sectorId++)
+    {
+        if (map[sectorId] == EMPTY)
         {
-            found_empty_dir = 1;
-            empty_dir_row = it;
-            break;
+            // Mark sector as used
+            map[sectorId] = USED;
+
+            // Put sectorId to sectors correspondent to files
+            sectors[sectorindex + sectorCount] = sectorId;
+        
+            // clear temp buffer
+            clear(tmp_buff, 512);
+
+            // Write to the empty sector
+            for (i = 0; i < SECTOR_SIZE; i++)
+                tmp_buff[i] = buffer[sectorCount * SECTOR_SIZE + i];
+            writeSector(tmp_buff, sectorId);
+
+            sectorCount++;
         }
     }
-    if (found_empty_dir == 0)
-    {
-        return;
-    }
-    
-    /* Check if there enough space to store file*/
-    for (it = 0, empty_sector = 0; it < 512 && empty_sector < *sectors; it++)
-    {
-        if (map[it] != 0xFF)
-            empty_sector++;
-    }
 
-    if (empty_sector < *sectors)
-    {
-        return;
-    }
+    // Write to system
+    writeSector(map, MAP_SECTOR);
+    writeSector(files, FILES_SECTOR_1);
+    writeSector(files + SECTOR_SIZE, FILES_SECTOR_2);
+    writeSector(sectors, SECTORS_SECTOR);
 
-    /* Clear sector that will be used to store filename */
-    clear(dir[32 * empty_dir_row], 12);
-
-    /* Put file name to diretory */
-    it = 0;
-    while (filename[it] != '\0' && it < 12)
-    {
-        dir[32 * empty_dir_row + it] = filename[it];
-        it++;
-    }
-
-    /* Check free sector in the map */  
-    // for (sector_id = 0, it = 0; it < 20, empty_sector > 0; sector_id++)
-    for (sector_id = 0, empty_sector = 0; sector_id < 512 && empty_sector < *sectors; sector_id++)
-    {
-        if (map[sector_id] != 0xFF)
-        {
-            /* Mark sector as used */
-            map[sector_id] = 0xFF;
-
-            /* Put sector id to direcory */
-            dir[32 * empty_dir_row + 12 + empty_sector] = sector_id;
-            
-            /* Clear temp buffer */
-            clear(sub_buff, 512);
-
-            /* Write to the empty sector */
-            for (it = 0; it < 512; it++)
-                sub_buff[it] = buffer[empty_sector * 512 + it];
-            writeSector(sub_buff, sector_id);
-            
-            empty_sector++;
-        }   
-    }
-     
-    /* Write to sector */
-    writeSector(map, 1);
-    writeSector(dir, 2);
 }
 
-void readFile(char *buffer, char *filename, int *success)
+void readFile(char *buffer, char *path, int *result, char parentIndex)
 {
-    char map[512], dir[512];
-    char sector_buff[512];
-    int sectors[21];
-    int file_found = 0;
-    int file_found_id;
-    int sector_id;
-    int buffer_index;
-    int filename_len;
-    int buff_name1[12], buff_name2[12];
-    int it, it2;
-
-    /* read sector dir */
-    readSector(map, 1);
-    readSector(dir, 2);
-
-    /* Find file name length */
-    filename_len = 0;
-    it = 0;
-    while (filename[it] != '\0')
-        it++;
-    filename_len = it;
-
-    /* Find file in dir */
-    for (it = 0; it < 16; it++)
-    {
-        if (dir[32 * it] != 0x0)
-        {
-            file_found = 1;
-            for (it2 = 0; it2 < filename_len; it2++)
-            {
-                if (dir[32*it + it2] != filename[it2])
-                {
-                    file_found = 0;
-                    break;
-                }
-            }
-        }
-        if (file_found == 1)
-        {
-            file_found_id = it;
-            break;   
-        }
-    }
-    /* If file not found, load failed */
-    if (file_found == 0)
-    {
-        *success = 0;
-        return;
-    }
-
-    /* Load file to buffer */
-    it = 1;
-    buffer_index = 0;
-    sector_id = dir[32*file_found_id + 12];
-    while (sector_id != 0x0 && it < 20)
-    {
-        readSector(buffer + buffer_index, sector_id);
-        sector_id = dir[32*file_found_id + 12 + it];
-        buffer_index += 512;
-        it++;
-    }
-    *success = 1;
+    
 }
 
 void executeProgram(char *filename, int segment, int *success)
 {
 	char buffer[10240];
 	int i;
-	readFile(buffer, filename, success);
+	// readFile(buffer, filename, success);
 	if (*success)
 	{
 		for (i = 0; i < 10240; i++)
@@ -336,7 +290,7 @@ void printLogo()
 {
     char buffer[10240];
     int success;
-    readFile(buffer, "logo.txt", 0);
+    // readFile(buffer, "logo.txt", 0);
     printString(buffer);
 }
 
