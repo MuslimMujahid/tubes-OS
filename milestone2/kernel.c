@@ -3,7 +3,7 @@
 #define FILES_SECTOR_1 2
 #define FILES_SECTOR_2 3
 #define SECTORS_SECTOR 4
-#define MAX_BYTE 512
+#define MAX_BYTE 256
 #define MAX_FILES 32
 #define FILE_SIZE 8192
 #define NAME_OFFSET 2
@@ -40,7 +40,7 @@ void fileExceptionHandler(int result);
 
 main()
 {
-    char buffer[SECTOR_SIZE * MAX_FILES];
+    char buffer[FILE_SIZE];
 	// int suc;
     int i;
     int filenameIndex;
@@ -213,7 +213,7 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
     }
 
     // find a free entry in the files
-    for (i = 0; i < SECTOR_SIZE; i += FILES_COLUMNS)
+    for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
         if (files[i] == EMPTY) break;
     if (i == SECTOR_SIZE * 2)
     {
@@ -280,6 +280,30 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
             sectorCount++;
         }
     }
+    // sectorCount = 0;
+    // sectorId = 0;
+    // while (sectorId < MAX_BYTE && sectorCount < *sectors)
+    // {
+    //     if (map[sectorId] == EMPTY)
+    //     {
+    //         // Mark sector as used
+    //         map[sectorId] = USED;
+
+    //         // Put sectorId to sectors correspondent to files
+    //         sectors[sectorindex + sectorCount] = sectorId;
+        
+    //         // clear temp buffer
+    //         clear(tmp_buff, SECTOR_SIZE);
+
+    //         // Write to the empty sector
+    //         for (i = 0; i < SECTOR_SIZE; i++)
+    //             tmp_buff[i] = buffer[sectorCount * SECTOR_SIZE + i];
+    //         writeSector(tmp_buff, sectorId);
+
+    //         sectorCount++;
+    //     }
+    //     sectorId++;
+    // }
 
     // Write to system
     writeSector(map, MAP_SECTOR);
@@ -320,12 +344,12 @@ void readFile(char *buffer, char *path, int *result, char parentIndex)
 
 void executeProgram(char *filename, int segment, int *success)
 {
-	char buffer[SECTOR_SIZE * MAX_FILES];
+	char buffer[FILE_SIZE];
 	int i;
 	// readFile(buffer, filename, success);
 	if (*success)
 	{
-		for (i = 0; i < SECTOR_SIZE * MAX_FILES; i++)
+		for (i = 0; i < FILE_SIZE; i++)
 		{
 			putInMemory(segment, i, buffer[i]);
 		}
@@ -363,7 +387,7 @@ void printChar(char c)
 void printLogo()
 {
     int success;
-    char buffer[SECTOR_SIZE * MAX_FILES];
+    char buffer[FILE_SIZE];
     readFile(buffer, "logo.txt", &success, ROOT);
     fileExceptionHandler(success);
     printString(buffer);
