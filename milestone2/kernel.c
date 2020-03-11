@@ -28,7 +28,7 @@ void writeSector(char *buffer, int sector);
 void readSector(char *buffer, int sector);
 void writeFile(char *buffer, char *path, int *sectors, char parentIndex);
 void readFile(char *buffer, char *path, int *result, char parentIndex);
-void executeProgram(char *filename, int segment, int *success);
+void executeProgram(char *path, int segment, int *success, char parentIndex);
 void clear(char *buffer, int length); 
 int mod(int a, int b);
 int div(int a, int b);
@@ -44,21 +44,19 @@ main()
 	int suc;
 	makeInterrupt21();
 	printLogo();
-
-	// interrupt(0x21, 0x4, buffer, "key.txt", &suc);
-	// if (suc)
+	// interrupt(0x21, 0xFF << 8 | 0x4, buffer, "key.txt", &suc);
+    writeFile(buffer, "test.txt", &suc, 0xFF);
+    fileExceptionHandler(suc);
+	// if (suc == 1)
 	// {
-	// 	interrupt(0x21,0x0, "Key : ", 0, 0);
-	//  	interrupt(0x21,0x0, buffer, 0, 0);
+	// 	interrupt(0x21, 0x0, "Key : ", 0, 0);
+	//  	interrupt(0x21, 0x0, buffer, 0, 0);
 	// }
 	// else
 	// {
-	// 	interrupt(0x21, 0x6, "milestone1", 0x2000, &suc);
+	// 	interrupt(0x21, 0xFF << 8 | 0x6, "milestone1", 0x2000, &suc);
 	// }
-	while (1)
-    {
-        
-    }
+	while (1);
 } 
 
 void handleInterrupt21 (int AX, int BX, int CX, int DX) {
@@ -85,7 +83,7 @@ void handleInterrupt21 (int AX, int BX, int CX, int DX) {
          writeFile(BX, CX, DX, AH);
          break;
       case 0x06:
-        //  executeProgram(BX, CX, DX, AH);
+         executeProgram(BX, CX, DX, AH);
          break;
       default:
          printString("Invalid interrupt");
@@ -182,7 +180,6 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
     char tmp_buff[SECTOR_SIZE];
 
     // Read sector map, files, and sectors
-    
     readSector(map, MAP_SECTOR);
     readSector(files, FILES_SECTOR_1);
     readSector(files + SECTOR_SIZE, FILES_SECTOR_2);
@@ -198,7 +195,7 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
 
     // find a free entry in the files
     for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
-        if (files[i] == EMPTY) break;
+        if (files[i + NAME_OFFSET] == EMPTY) break;
     if (i == SECTOR_SIZE * 2)
     {
         *sectors = FILES_FULL;
@@ -217,7 +214,6 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
     sectorindex = i;
 
     // Check if there enough space to store file
-    empty_sector;
     for (i = 0, empty_sector = 0; i < MAX_BYTE && empty_sector < *sectors; i++)
     {
         if (map[i] != USED)
@@ -229,7 +225,7 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
     files[fileIndex] = parentIndex;
 
     // Point the files to the sector
-    files[fileIndex + 1] = sectorindex;
+    files[fileIndex + 1] = sectorindex >> 0x4;
 
     // Clear memory that will be used to store filename
     clear(files + fileIndex + NAME_OFFSET, 14);
@@ -299,13 +295,14 @@ void readFile(char *buffer, char *path, int *result, char parentIndex)
     {
         readSector(buffer + i*SECTOR_SIZE, sectors[sectorIndex + i]);
     }
+    *result = 1;
 }
 
-void executeProgram(char *filename, int segment, int *success)
+void executeProgram(char *path, int segment, int *success, char parentIndex)
 {
 	char buffer[FILE_SIZE];
 	int i;
-	// readFile(buffer, filename, success);
+	readFile(buffer, path, success, parentIndex);
 	if (*success)
 	{
 		for (i = 0; i < FILE_SIZE; i++)
@@ -380,7 +377,7 @@ int findFilenameInDir(char* path, char parentIndex)
     while (path[i] != '\0' && i < 14) i++;
     while (path[i] != '/' && i > 0) i--;
     if (path[i] == '/') 
-        filenameIndex = i+1; 
+        filenameIndex = i + 1; 
     else 
         filenameIndex = 0;
 
@@ -388,7 +385,7 @@ int findFilenameInDir(char* path, char parentIndex)
     filefound = 0;
     for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
     {
-        if (files[i] != EMPTY && files[i + 1] != DIR) // Check only files, not directory
+        if (files[i] == parentIndex && files[i + 1] != DIR) // Check only files, not directory
         {
             filefound = 1;
             j = 0;
@@ -411,14 +408,14 @@ void fileExceptionHandler(int result)
 {
     if (result == FILE_NOT_FOUND)
     {
-        printString("File not found/already exist");
+        printString("File not found/already exist\n");
     }
     else if (result == FILES_FULL)
     {
-        printString("No empty space in files");
+        printString("No empty space in files\n");
     }
     else if (result == SECTORS_FULL)
     {
-        printString("No empty space in sectors");
+        printString("No empty space in sectors\n");
     }
 }

@@ -78,7 +78,7 @@ void main(int argc, char* argv[]) {
 
   // find a free entry in the files
   for (i = 0; i < SECTOR_SIZE; i += FILES_COLUMNS)
-    if (files[i] == EMPTY) break;
+    if (files[i + NAME_OFFSET] == EMPTY) break;
   if (i == SECTOR_SIZE * 2) {
     printf("Not enough room in files\n");
     return;

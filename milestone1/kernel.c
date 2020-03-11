@@ -18,18 +18,18 @@ main()
     char buffer[10240];
 	int suc;
 	makeInterrupt21();
-	// printLogo();
-    printString("testttttttttttttttttttttt\0");
-	// interrupt(0x21, 0x4, buffer, "key.txt", &suc);
-	// if (suc)
-	// {
-	// 	interrupt(0x21,0x0, "Key : ", 0, 0);
-	//  	interrupt(0x21,0x0, buffer, 0, 0);
-	// }
-	// else
-	// {
-	// 	interrupt(0x21, 0x6, "milestone1", 0x2000, &suc);
-	// }
+	printLogo();
+
+	interrupt(0x21, 0x4, buffer, "key.txt", &suc);
+	if (suc)
+	{
+		interrupt(0x21,0x0, "Key : ", 0, 0);
+	 	interrupt(0x21,0x0, buffer, 0, 0);
+	}
+	else
+	{
+		interrupt(0x21, 0x6, "milestone1", 0x2000, &suc);
+	}
 	while (1)
     {
         
@@ -82,26 +82,20 @@ void printString(char* string)
 
 void readString(char* string)
 {
-    int dashn = 0xa;
-    int endStr = 0x0;
-    int enter = 0xd;
-    int backsp = 0x8;
-    int dashr = 0xd;
     int count = 0;
-
     while(1)
     {
         /* Call interrupt 0x16 */
         /* interrupt #, AX, BX, CX, DX */
         char ascii = interrupt(0x16,0,0,0,0);
-        if (ascii == enter)
+        if (ascii == '\r')
         {              
             string[count] = 0x0;
-            interrupt(0x10,0xe*256+dashn,0,0,0);
-            interrupt(0x10,0xe*256+dashr,0,0,0);
+            interrupt(0x10, 0xE00+'\n', 0, 0, 0);
+            interrupt(0x10, 0xE00+'\r', 0, 0, 0);
             return;
         }
-        else if (ascii == backsp)
+        else if (ascii == '\b')
         {
             if (count > 1)
             {
