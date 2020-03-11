@@ -36,11 +36,12 @@ void printChar(char c);
 void printLogo();
 int strCmp(char* str1, char* str2);
 int findFilenameInDir(char* path, char parentIndex);
+void fileExceptionHandler(int result);
 
 main()
 {
     char buffer[SECTOR_SIZE * MAX_FILES];
-	int suc;
+	// int suc;
     int i;
     int filenameIndex;
     char* path;
@@ -49,15 +50,15 @@ main()
 
     path = "folder/namafile.txt\0";
 
-    // i = 0;
-    // while (path[i] != '\0' && i < 14) i++;
-    // while (path[i] != '/' && i > 0) i--;
-    // if (path[i] == '/') 
-    //     filenameIndex = i+1; 
-    // else 
-    //     filenameIndex = 0;
+    i = 0;
+    while (path[i] != '\0' && i < 14) i++;
+    while (path[i] != '/' && i > 0) i--;
+    if (path[i] == '/') 
+        filenameIndex = i+1; 
+    else 
+        filenameIndex = 0;
     
-    printString("testtttttttt\0");
+    printString(path + filenameIndex);
 
 
 	// interrupt(0x21, 0x4, buffer, "key.txt", &suc);
@@ -205,9 +206,9 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
 
     // Find file in parentIndex
     fileIndex = findFilenameInDir(path, parentIndex);
-    if (fileIndex != -1) // file already exist
+    if (fileIndex != FILE_EXIST) // file already exist
     {
-        *sectors = -1;
+        *sectors = FILE_EXIST;
         return;
     }
 
@@ -361,8 +362,10 @@ void printChar(char c)
 
 void printLogo()
 {
+    int success;
     char buffer[SECTOR_SIZE * MAX_FILES];
-    readFile(buffer, "logo.txt", 0, ROOT);
+    readFile(buffer, "logo.txt", &success, ROOT);
+    fileExceptionHandler(success);
     printString(buffer);
 }
 
@@ -417,4 +420,20 @@ int findFilenameInDir(char* path, char parentIndex)
         }
     }
     return FILE_NOT_FOUND;
+}
+
+void fileExceptionHandler(int result)
+{
+    if (result == FILE_NOT_FOUND)
+    {
+        printString("File not found/already exist");
+    }
+    else if (result == FILES_FULL)
+    {
+        printString("No empty space in files");
+    }
+    else if (result == SECTORS_FULL)
+    {
+        printString("No empty space in sectors");
+    }
 }
