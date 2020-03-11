@@ -4,12 +4,23 @@
 #define FILES_SECTOR_2 3
 #define SECTORS_SECTOR 4
 #define MAX_BYTE 512
+#define MAX_FILES 32
+#define FILE_SIZE 8192
 #define NAME_OFFSET 2
 #define SECTORS_COLUMNS 16
 #define FILES_COLUMNS 16
 #define ROOT 0xFF
 #define USED 0xFF
 #define EMPTY 0x0
+#define DIR 0xFF
+
+// File exception
+
+#define FILE_NOT_FOUND -1
+#define FILE_EXIST -1
+#define FILES_FULL -2
+#define SECTORS_FULL -3
+#define FOLDER_UNVALID -4
 
 void handleInterrupt21 (int AX, int BX, int CX, int DX);
 void printString(char *string);
@@ -25,6 +36,7 @@ int div(int a, int b);
 void printChar(char c);
 void printLogo();
 int strCmp(char* str1, char* str2);
+int findFilenameInDir(char* path, char parentIndex);
 
 main()
 {
@@ -32,50 +44,53 @@ main()
 	int suc;
 	makeInterrupt21();
 	printLogo();
-	interrupt(0x21, 0x4, buffer, "key.txt", &suc);
-	if (suc)
-	{
-		interrupt(0x21,0x0, "Key : ", 0, 0);
-	 	interrupt(0x21,0x0, buffer, 0, 0);
-	}
-	else
-	{
-		interrupt(0x21, 0x6, "milestone1", 0x2000, &suc);
-	}
+	// interrupt(0x21, 0x4, buffer, "key.txt", &suc);
+	// if (suc)
+	// {
+	// 	interrupt(0x21,0x0, "Key : ", 0, 0);
+	//  	interrupt(0x21,0x0, buffer, 0, 0);
+	// }
+	// else
+	// {
+	// 	interrupt(0x21, 0x6, "milestone1", 0x2000, &suc);
+	// }
 	while (1)
     {
         
     }
 } 
 
-void handleInterrupt21 (int AX, int BX, int CX, int DX)
-{
-    switch (AX) {
-      case 0x0:
-          printString(BX);
-          break;
-      case 0x1:
-          readString(BX);
-          break;
-      case 0x2:
-        readSector(BX, CX);
-        break;
-      case 0x3:
-        writeSector(BX, CX);
-        break;
-      case 0x4:
-        // readFile(BX, CX, DX);
-        break;
-      case 0x5:
-        // writeFile(BX, CX, DX);
-        break;
-      case 0x6:
-        executeProgram(BX, CX, DX);
-        break;
+void handleInterrupt21 (int AX, int BX, int CX, int DX) {
+   char AL, AH;
+   AL = (char) (AX);
+   AH = (char) (AX >> 8);
+   switch (AL) {
+      case 0x00:
+         printString(BX);
+         break;
+      case 0x01:
+         readString(BX);
+         break;
+      case 0x02:
+         readSector(BX, CX);
+         break;
+      case 0x03:
+         writeSector(BX, CX);
+         break;
+      case 0x04:
+         readFile(BX, CX, DX, AH);
+         break;
+      case 0x05:
+         writeFile(BX, CX, DX, AH);
+         break;
+      case 0x06:
+        //  executeProgram(BX, CX, DX, AH);
+         break;
       default:
-          printString("Invalid interrupt");
-    }
+         printString("Invalid interrupt");
+   }
 }
+
 
 void printString(char* string)
 {   
@@ -158,28 +173,50 @@ void writeSector(char *buffer, int sector)
 void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
 {
     int i, j;
+    char map[SECTOR_SIZE], files[SECTOR_SIZE * 2], sectors[SECTOR_SIZE];
+    int fileIndex;
+    int sectorindex;
+    int empty_sector;
+    int sectorId, sectorCount;
+    char tmp_buff[SECTOR_SIZE];
 
     // Read sector map, files, and sectors
-    char map[SECTOR_SIZE], files[SECTOR_SIZE * 2], sectors[SECTOR_SIZE];
+    
     readSector(map, MAP_SECTOR);
     readSector(files, FILES_SECTOR_1);
     readSector(files + SECTOR_SIZE, FILES_SECTOR_2);
     readSector(sectors, SECTORS_SECTOR);
 
+    // Find file in parentIndex
+    fileIndex = findFilenameInDir(path, parentIndex);
+    if (fileIndex != -1) // file already exist
+    {
+        *sectors = -1;
+        return;
+    }
+
     // find a free entry in the files
     for (i = 0; i < SECTOR_SIZE; i += FILES_COLUMNS)
         if (files[i] == EMPTY) break;
-    if (i == SECTOR_SIZE * 2) return;
-    int fileindex = i;
+    if (i == SECTOR_SIZE * 2)
+    {
+        *sectors = FILES_FULL;
+        return;
+    }
+    fileIndex = i;
 
     // find a free sectors entry
     for (i = 0; i < SECTOR_SIZE; i += SECTORS_COLUMNS)
         if (sectors[i] == EMPTY) break;
-    if (i == SECTOR_SIZE) return;
-    int sectorindex = i;
+    if (i == SECTOR_SIZE)
+    {
+        *sectors = SECTORS_FULL;
+        return;
+    }
+    sectorindex = i;
 
     // Check if there enough space to store file
-    int empty_sector;
+    empty_sector;
     for (i = 0, empty_sector = 0; i < MAX_BYTE && empty_sector < *sectors; i++)
     {
         if (map[i] != USED)
@@ -188,27 +225,23 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
     if (i == MAX_BYTE) return;
 
     // Put files in the parentIndex
-    files[fileindex] = parentIndex;
+    files[fileIndex] = parentIndex;
 
     // Point the files to the sector
-    files[fileindex + 1] = sectorindex;
-
-    // clear the memory to put name
-    clear(files + fileindex + NAME_OFFSET, 14);
+    files[fileIndex + 1] = sectorindex;
 
     // Clear memory that will be used to store filename
-    clear(files + fileindex + NAME_OFFSET, 14);
+    clear(files + fileIndex + NAME_OFFSET, 14);
 
     // Store filename
     i = 0, j = 0;
-    while (path[i++] != '\0' && i < 14);
-    while (path[i--] != '/' && i > 0);
-    while (path[++i] != '\0' && i < 14);
-        files[fileindex + NAME_OFFSET + j++] = path[i];
+    while (path[i] != '\0' && i < 14) i++;
+    while (path[i] != '/' && i > 0) i--;
+    if (path[i] == '/') i += 1;
+    while (path[i] != '\0' && j < 14);
+        files[fileIndex + NAME_OFFSET + j++] = path[i++];
 
     // Store file 
-    int sectorId, sectorCount;
-    char tmp_buff[SECTOR_SIZE];
     for (sectorId = 0, sectorCount = 0; sectorId < MAX_BYTE && sectorCount < *sectors; sectorId++)
     {
         if (map[sectorId] == EMPTY)
@@ -220,7 +253,7 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
             sectors[sectorindex + sectorCount] = sectorId;
         
             // clear temp buffer
-            clear(tmp_buff, 512);
+            clear(tmp_buff, SECTOR_SIZE);
 
             // Write to the empty sector
             for (i = 0; i < SECTOR_SIZE; i++)
@@ -241,7 +274,31 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
 
 void readFile(char *buffer, char *path, int *result, char parentIndex)
 {
-    
+    int i;
+    char map[SECTOR_SIZE], files[SECTOR_SIZE * 2], sectors[SECTOR_SIZE];
+    int fileIndex;
+    int sectorIndex;    
+
+    // Read sector map, files, and sectors
+    readSector(map, MAP_SECTOR);
+    readSector(files, FILES_SECTOR_1);
+    readSector(files + SECTOR_SIZE, FILES_SECTOR_2);
+    readSector(sectors, SECTORS_SECTOR);
+
+    // Find filename in parentIndex
+    fileIndex = findFilenameInDir(path, parentIndex);
+    if (fileIndex == FILE_NOT_FOUND) // file not found
+    {
+        *result = FILE_NOT_FOUND;
+        return;
+    }
+
+    // Load file to buffer
+    sectorIndex = files[fileIndex + 1];
+    for (i = 0; i < FILES_COLUMNS && sectors[sectorIndex + i] != EMPTY; i++ )
+    {
+        readSector(buffer + i*SECTOR_SIZE, sectors[sectorIndex + i]);
+    }
 }
 
 void executeProgram(char *filename, int segment, int *success)
@@ -289,8 +346,7 @@ void printChar(char c)
 void printLogo()
 {
     char buffer[10240];
-    int success;
-    // readFile(buffer, "logo.txt", 0);
+    readFile(buffer, "logo.txt", 0, ROOT);
     printString(buffer);
 }
 
@@ -304,4 +360,45 @@ int strCmp(char* str1 ,char* str2)
         it++;
     }
     return (str1[it] == str2[it]);
+}
+
+int findFilenameInDir(char* path, char parentIndex)
+{
+    int i, j;
+    int filenameIndex;
+    int filefound;
+
+    // Load files
+    char files[SECTOR_SIZE * 2];
+    readSector(files, FILES_SECTOR_1);
+    readSector(files + SECTOR_SIZE, FILES_SECTOR_2);
+
+    // Find filename in path
+    i = 0;
+    while (path[i] != '\0' && i < 14) i++;
+    while (path[i] != '/' && i > 0) i--;
+    if (path[i] == '/') 
+        filenameIndex = i+1; 
+    else 
+        filenameIndex = 0;
+
+    // Find filename in parentIndex
+    for (i = 0; i < SECTOR_SIZE*2; i += FILES_COLUMNS)
+    {
+        if (files[i] != EMPTY && files[i + 1] != DIR) // Check only files not directory
+        {
+            filefound = 1;
+            j = 0;
+            while (path[filenameIndex + j] != '\0')
+            {
+                if (path[filenameIndex + j] != files[i + NAME_OFFSET + j])
+                {
+                    filefound = 0;
+                    break;
+                }
+            }
+            if (filefound) return i;
+        }
+    }
+    return FILE_NOT_FOUND;
 }

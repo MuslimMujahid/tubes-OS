@@ -94,7 +94,6 @@ void main(int argc, char* argv[]) {
     return;
   }
   int sectorindex = i;
-  printf("found free sector index in %d\n", sectorindex);
 
   // Put files in root
   files[fileindex] = ROOT;
