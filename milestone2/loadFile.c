@@ -99,7 +99,7 @@ void main(int argc, char* argv[]) {
   files[fileindex] = ROOT;
 
   // Point the file to the sector
-  files[fileindex + 1] = sectorindex; 
+  files[fileindex + 1] = sectorindex >> 0x4; 
 
   // clear the memory to put name
   clear(files + fileindex + NAME_OFFSET, 14);

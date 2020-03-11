@@ -41,25 +41,9 @@ void fileExceptionHandler(int result);
 main()
 {
     char buffer[FILE_SIZE];
-	// int suc;
-    int i;
-    int filenameIndex;
-    char* path;
+	int suc;
 	makeInterrupt21();
 	printLogo();
-
-    path = "folder/namafile.txt\0";
-
-    i = 0;
-    while (path[i] != '\0' && i < 14) i++;
-    while (path[i] != '/' && i > 0) i--;
-    if (path[i] == '/') 
-        filenameIndex = i+1; 
-    else 
-        filenameIndex = 0;
-    
-    printString(path + filenameIndex);
-
 
 	// interrupt(0x21, 0x4, buffer, "key.txt", &suc);
 	// if (suc)
@@ -280,37 +264,12 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
             sectorCount++;
         }
     }
-    // sectorCount = 0;
-    // sectorId = 0;
-    // while (sectorId < MAX_BYTE && sectorCount < *sectors)
-    // {
-    //     if (map[sectorId] == EMPTY)
-    //     {
-    //         // Mark sector as used
-    //         map[sectorId] = USED;
-
-    //         // Put sectorId to sectors correspondent to files
-    //         sectors[sectorindex + sectorCount] = sectorId;
-        
-    //         // clear temp buffer
-    //         clear(tmp_buff, SECTOR_SIZE);
-
-    //         // Write to the empty sector
-    //         for (i = 0; i < SECTOR_SIZE; i++)
-    //             tmp_buff[i] = buffer[sectorCount * SECTOR_SIZE + i];
-    //         writeSector(tmp_buff, sectorId);
-
-    //         sectorCount++;
-    //     }
-    //     sectorId++;
-    // }
 
     // Write to system
     writeSector(map, MAP_SECTOR);
     writeSector(files, FILES_SECTOR_1);
     writeSector(files + SECTOR_SIZE, FILES_SECTOR_2);
     writeSector(sectors, SECTORS_SECTOR);
-
 }
 
 void readFile(char *buffer, char *path, int *result, char parentIndex)
@@ -335,8 +294,8 @@ void readFile(char *buffer, char *path, int *result, char parentIndex)
     }
 
     // Load file to buffer
-    sectorIndex = files[fileIndex + 1];
-    for (i = 0; i < FILES_COLUMNS && sectors[sectorIndex + i] != EMPTY; i++ )
+    sectorIndex = files[fileIndex + 1] * SECTORS_COLUMNS;
+    for (i = 0; i < FILES_COLUMNS && sectors[sectorIndex + i] != EMPTY; i++)
     {
         readSector(buffer + i*SECTOR_SIZE, sectors[sectorIndex + i]);
     }
@@ -426,9 +385,10 @@ int findFilenameInDir(char* path, char parentIndex)
         filenameIndex = 0;
 
     // Find filename in parentIndex
+    filefound = 0;
     for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
     {
-        if (files[i] != EMPTY && files[i + 1] != DIR) // Check only files not directory
+        if (files[i] != EMPTY && files[i + 1] != DIR) // Check only files, not directory
         {
             filefound = 1;
             j = 0;
@@ -439,6 +399,7 @@ int findFilenameInDir(char* path, char parentIndex)
                     filefound = 0;
                     break;
                 }
+                j++;
             }
             if (filefound) return i;
         }
