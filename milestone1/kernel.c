@@ -18,17 +18,18 @@ main()
     char buffer[10240];
 	int suc;
 	makeInterrupt21();
-	printLogo();
-	interrupt(0x21, 0x4, buffer, "key.txt", &suc);
-	if (suc)
-	{
-		interrupt(0x21,0x0, "Key : ", 0, 0);
-	 	interrupt(0x21,0x0, buffer, 0, 0);
-	}
-	else
-	{
-		interrupt(0x21, 0x6, "milestone1", 0x2000, &suc);
-	}
+	// printLogo();
+    printString("testttttttttttttttttttttt\0");
+	// interrupt(0x21, 0x4, buffer, "key.txt", &suc);
+	// if (suc)
+	// {
+	// 	interrupt(0x21,0x0, "Key : ", 0, 0);
+	//  	interrupt(0x21,0x0, buffer, 0, 0);
+	// }
+	// else
+	// {
+	// 	interrupt(0x21, 0x6, "milestone1", 0x2000, &suc);
+	// }
 	while (1)
     {
         

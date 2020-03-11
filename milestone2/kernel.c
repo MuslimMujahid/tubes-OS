@@ -15,7 +15,6 @@
 #define DIR 0xFF
 
 // File exception
-
 #define FILE_NOT_FOUND -1
 #define FILE_EXIST -1
 #define FILES_FULL -2
@@ -40,10 +39,27 @@ int findFilenameInDir(char* path, char parentIndex);
 
 main()
 {
-    char buffer[10240];
+    char buffer[SECTOR_SIZE * MAX_FILES];
 	int suc;
+    int i;
+    int filenameIndex;
+    char* path;
 	makeInterrupt21();
 	printLogo();
+
+    path = "folder/namafile.txt\0";
+
+    // i = 0;
+    // while (path[i] != '\0' && i < 14) i++;
+    // while (path[i] != '/' && i > 0) i--;
+    // if (path[i] == '/') 
+    //     filenameIndex = i+1; 
+    // else 
+    //     filenameIndex = 0;
+    
+    printString("testtttttttt\0");
+
+
 	// interrupt(0x21, 0x4, buffer, "key.txt", &suc);
 	// if (suc)
 	// {
@@ -303,12 +319,12 @@ void readFile(char *buffer, char *path, int *result, char parentIndex)
 
 void executeProgram(char *filename, int segment, int *success)
 {
-	char buffer[10240];
+	char buffer[SECTOR_SIZE * MAX_FILES];
 	int i;
 	// readFile(buffer, filename, success);
 	if (*success)
 	{
-		for (i = 0; i < 10240; i++)
+		for (i = 0; i < SECTOR_SIZE * MAX_FILES; i++)
 		{
 			putInMemory(segment, i, buffer[i]);
 		}
@@ -345,7 +361,7 @@ void printChar(char c)
 
 void printLogo()
 {
-    char buffer[10240];
+    char buffer[SECTOR_SIZE * MAX_FILES];
     readFile(buffer, "logo.txt", 0, ROOT);
     printString(buffer);
 }
@@ -383,7 +399,7 @@ int findFilenameInDir(char* path, char parentIndex)
         filenameIndex = 0;
 
     // Find filename in parentIndex
-    for (i = 0; i < SECTOR_SIZE*2; i += FILES_COLUMNS)
+    for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
     {
         if (files[i] != EMPTY && files[i + 1] != DIR) // Check only files not directory
         {
