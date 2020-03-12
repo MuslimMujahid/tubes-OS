@@ -19,36 +19,45 @@
 
 // command type
 #define cd 1
-
+#define ls 2
+#define mkdir 3
 
 int len(char* string);
 void pS(char *string, int newLine);
 void pI(int i, int newLine);
 void pC(char c, int newLine);
 int getCommandHandler(char* command);
+void commandHandler(int type, char* curDirIndex);
 int strCmp(char* str1, char* str2);
+
+// command methods
+void _ls_(char curDirIndex);
+void _mkdir_(char* dirname, char parentIndex);
 
 main()
 {
     int running;
     int command;
-    char* input;
+    char input[100];
+    char argInput[100];
     char curDir[100]; 
+    char curDirIndex;
+    char files[SECTOR_SIZE * 2];
 
     running = 1;
-    curDir[0] = '$'; // Begin in root
+    curDir[0] = '$'; 
+    curDirIndex = ROOT; // Begin in root
+
     while(running)
     {
-        pS(curDir, FALSE);
-        interrupt(0x21, (0 << 8) | 0x1, &input, 0, 0);
+        // Print current directory path
+        interrupt(0x21, 0x0, "$ ", 0, 0);
+        interrupt(0x21, (0 << 8) | 0x1, input, 0, 0);
+
+        // Read command
         command = getCommandHandler(input);
-        if (command == 1)
-        {
-            pS("did you just command cd?", TRUE);
-        }
-        pS("You just put a command", TRUE);
+        commandHandler(command, &curDirIndex);          
     }
-    pS("Exitttttttt", TRUE);
 }
 
 int len(char* string)
@@ -75,10 +84,27 @@ void pC(char c, int newLine)
 
 int getCommandHandler(char* command)
 {
-    if (strCmp(command, "cc"))
+    if (strCmp(command, "cd")) return cd;
+    else if (strCmp(command, "ls")) return ls;
+    else if (strCmp(command, "mkdir")) return mkdir;
+}
+
+void commandHandler(int type, char* curDirIndex)
+{
+    switch (type)
     {
-        pS("You just used cd command", TRUE);
-        return cd;
+        case cd:
+            pS("You just command cd!", TRUE);
+            break;
+        case ls:
+            _ls_(0xFF);
+            break;
+        case mkdir:
+            pS("You just created a dir", TRUE);
+            _mkdir_("tttttttttt", ROOT);
+            break;
+        default:
+            break;
     }
 }
 
@@ -88,9 +114,6 @@ int strCmp(char* str1, char* str2)
     int length = len(str1);
 
     if (length != len(str2)){
-        pI(length, TRUE);
-        pI(len(str2), TRUE);
-        pS("Not to fast! 11111111", TRUE);
         return FALSE;
     }
     else
@@ -98,10 +121,59 @@ int strCmp(char* str1, char* str2)
         for (i = 0; i < length; i++)
         {
             if (str1[i] != str2[i]){
-                pS("Not to fast!", TRUE);
                 break;
             }
         }
     }
     return (str1[i] == str2[i]);
+}
+
+void _ls_(char curDirIndex)
+{
+    int i, j;
+    char files[SECTOR_SIZE * 2];
+
+    // load files sector
+    interrupt(0x21, 0 << 8 | 0x02, files, FILES_SECTOR_1, 0);
+    interrupt(0x21, 0 << 8 | 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
+
+    // print all filena,e sin curDirIndex
+    pC(' ', FALSE);
+    pS("FILES: ", FALSE);
+    for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
+    {
+        if (files[i + 1] != DIR && files[i] == curDirIndex)
+        {
+            j = 0;
+            while (files[i + NAME_OFFSET + j] != '\0' && j < 14)
+            {
+                pC(files[i + NAME_OFFSET + j], FALSE);
+                j++;
+            }
+            pC(' ', FALSE);
+        }
+    }
+    pC(' ', TRUE);
+
+    pC(' ', FALSE);
+    pS("DIR: ", FALSE);
+    for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
+    {
+        if (files[i + 1] == DIR && files[i] == curDirIndex)
+        {
+            j = 0;
+            while (files[i + NAME_OFFSET + j] != '\0' && j < 14)
+            {
+                pC(files[i + NAME_OFFSET + j], FALSE);
+                j++;
+            }
+            pC(' ', FALSE);
+        }
+    }
+    pC(' ', TRUE);
+}
+
+void _mkdir_(char* dirname, char parentIndex)
+{
+    interrupt(0x21, (parentIndex << 8) | 0x5, 0, dirname, 0);
 }

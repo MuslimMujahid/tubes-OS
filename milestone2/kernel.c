@@ -12,6 +12,7 @@
 #define NAME_OFFSET 2
 #define SECTORS_COLUMNS 16
 #define FILES_COLUMNS 16
+#define MAX_FILENAME_LENGTH 14
 #define ROOT 0xFF
 #define USED 0xFF
 #define EMPTY 0x0
@@ -38,30 +39,21 @@ int div(int a, int b);
 void printChar(char c, int newline);
 void printLogo();
 int strCmp(char* str1, char* str2);
-findFilenameInDir(char* path, char parentIndex);
+int findFilenameInDir(char* path, char parentIndex);
 void fileExceptionHandler(int result);
 void printInt(int i, int newLine) ;
 
 main()
 {
     char buffer[FILE_SIZE];
-	int suc;
+	int suc = 0;
 	makeInterrupt21();
 	// printLogo();
-	interrupt(0x21, 0xFF << 8 | 0x6, "shell", 0x2000, &suc);
+	interrupt(0x21, 0xFF << 8 | 0x6, "shell", 0x2000, 0);
+	while (1)
+    {
 
-	// interrupt(0x21, 0xFF << 8 | 0x4, buffer, "key.txt", &suc);
-    // fileExceptionHandler(suc);
-	// if (suc == 1)
-	// {
-	// 	interrupt(0x21, 0x0, "Key : ", 0, 0);
-	//  	interrupt(0x21, 0x0, buffer, 0, 0);
-	// }
-	// else
-	// {
-	// 	interrupt(0x21, 0xFF << 8 | 0x6, "milestone1", 0x2000, &suc);
-	// }
-	while (1);
+    }
 } 
 
 void handleInterrupt21 (int AX, int BX, int CX, int DX) {
@@ -104,17 +96,17 @@ void handleInterrupt21 (int AX, int BX, int CX, int DX) {
 
 void printString(char* string, int newline)
 {   
+    char ch;
     int i = 0;
-    while(string[i] != '\0' && string[i])
+    while(string[i] != '\0')
     {
-        int ch = string[i];
-        if (ch == '\n') interrupt(0x10, 0xE00+'\r', 0, 0, 0);
-        interrupt(0x10, 0xE00+ch, 0, 0, 0);
+        ch = string[i];
+        if (ch == '\n') printChar('\r', FALSE);
+        printChar(ch, FALSE);
         i++;
     }
     if (newline) {
-		interrupt(0x10, 0xE00 + '\n', 0, 0, 0);
-		interrupt(0x10, 0xE00 + '\r', 0, 0, 0);
+		printChar('\r', TRUE);
 	}
 }
 
@@ -176,7 +168,7 @@ void writeSector(char *buffer, int sector)
       mod(div(sector, 18), 2) * 0x100);
 }
 
-void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
+void writeFile(char *buffer, char *path, int *sector, char parentIndex)
 {
     int i, j;
     char map[SECTOR_SIZE];
@@ -198,20 +190,19 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
     fileIndex = findFilenameInDir(path, parentIndex);
     if (fileIndex != FILE_NOT_FOUND) // file already exist
     {
-        *sectors = FILE_EXIST;
+        *sector = FILE_EXIST;
         return;
     }
 
-
     // Check if there enough space to store file
-    for (i = 0, empty_sector = 0; i < MAX_BYTE && empty_sector < *sectors; i++)
+    for (i = 0, empty_sector = 0; i < MAX_BYTE && empty_sector < *sector; i++)
     {
         if (map[i] != USED)
             empty_sector++;
     }
     if (i == MAX_BYTE)
     {
-        *sectors = SECTORS_FULL;
+        *sector = SECTORS_FULL;
         return;
     }
 
@@ -220,7 +211,7 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
         if (files[i + NAME_OFFSET] == EMPTY) break;
     if (i == SECTOR_SIZE * 2)
     {
-        *sectors = FILES_FULL;
+        *sector = FILES_FULL;
         return;
     }
     fileIndex = i;
@@ -230,7 +221,7 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
         if (sectors[i] == EMPTY) break;
     if (i == SECTOR_SIZE)
     {
-        *sectors = SECTORS_FULL;
+        *sector = SECTORS_FULL;
         return;
     }
     sectorindex = i;
@@ -239,20 +230,31 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
     files[fileIndex] = parentIndex;
 
     // Point the files to the sector
-    files[fileIndex + 1] = sectorindex >> 0x4;
+    // if its a directory then set S to 0xFF
+    if ((*sector) < 1)
+    {
+        files[fileIndex + 1] = DIR;
+    }
+    else
+    {
+        printInt(*sector, TRUE);
+        files[fileIndex + 1] = sectorindex >> 0x4;
+    }
+    
 
     // Clear memory that will be used to store filename
-    clear(files + fileIndex + NAME_OFFSET, 14);
+    clear(files + fileIndex + NAME_OFFSET, MAX_FILENAME_LENGTH);
 
     // Store filename
     i = 0, j = 0;
-    while (path[i] != '\0' && i < 14) i++;
+    while (path[i] != '\0' && i < MAX_FILENAME_LENGTH) i++;
     while (path[i] != '/' && i > 0) i--;
     if (path[i] == '/') i += 1;
-    while (path[i] != '\0' && j < 14)
+    while (path[i] != '\0' && j < MAX_FILENAME_LENGTH)
         files[fileIndex + NAME_OFFSET + j++] = path[i++];
+
     // Store file 
-    for (sectorId = 0, sectorCount = 0; sectorId < MAX_BYTE && sectorCount < *sectors; sectorId++)
+    for (sectorId = 0, sectorCount = 0; sectorId < MAX_BYTE && sectorCount < *sector; sectorId++)
     {
         if (map[sectorId] == EMPTY)
         {
@@ -281,7 +283,7 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex)
     writeSector(files + SECTOR_SIZE, FILES_SECTOR_2);
     writeSector(sectors, SECTORS_SECTOR);
 
-    *sectors = 1;
+    *sector = 1;
 }
 
 void readFile(char *buffer, char *path, int *result, char parentIndex)
@@ -394,7 +396,7 @@ int findFilenameInDir(char* path, char parentIndex)
 
     // Find filename in path
     i = 0;
-    while (path[i] != '\0' && i < 14) i++;
+    while (path[i] != '\0' && i < MAX_FILENAME_LENGTH) i++;
     while (path[i] != '/' && i > 0) i--;
     if (path[i] == '/') path += i + 1; 
 
