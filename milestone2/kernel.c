@@ -1,3 +1,6 @@
+#define TRUE 1
+#define FALSE 0
+
 #define SECTOR_SIZE 512
 #define MAP_SECTOR 1
 #define FILES_SECTOR_1 2
@@ -22,7 +25,7 @@
 #define FOLDER_UNVALID -4
 
 void handleInterrupt21 (int AX, int BX, int CX, int DX);
-void printString(char *string);
+void printString(char *string, int newline);
 void readString(char *string);
 void writeSector(char *buffer, int sector);
 void readSector(char *buffer, int sector);
@@ -32,11 +35,12 @@ void executeProgram(char *path, int segment, int *success, char parentIndex);
 void clear(char *buffer, int length); 
 int mod(int a, int b);
 int div(int a, int b);
-void printChar(char c);
+void printChar(char c, int newline);
 void printLogo();
 int strCmp(char* str1, char* str2);
 findFilenameInDir(char* path, char parentIndex);
 void fileExceptionHandler(int result);
+void printInt(int i, int newLine) ;
 
 main()
 {
@@ -66,7 +70,7 @@ void handleInterrupt21 (int AX, int BX, int CX, int DX) {
    AH = (char) (AX >> 8);
    switch (AL) {
       case 0x00:
-         printString(BX);
+         printString(BX, CX);
          break;
       case 0x01:
          readString(BX);
@@ -86,25 +90,32 @@ void handleInterrupt21 (int AX, int BX, int CX, int DX) {
       case 0x06:
          executeProgram(BX, CX, DX, AH);
          break;
+      case 0x07:
+         printInt(BX, CX);
+         break;
+      case 0x08:
+         printChar(BX, CX);
+         break;
       default:
-         printString("Invalid interrupt");
+         printString("Invalid interrupt", TRUE);
    }
 }
 
 
-void printString(char* string)
+void printString(char* string, int newline)
 {   
     int i = 0;
     while(string[i] != '\0' && string[i])
     {
         int ch = string[i];
-
-        if (ch == '\n')
-            interrupt(0x10, 0xe*256+'\r', 0, 0, 0);
-
-        interrupt(0x10, 0xe*256+ch, 0, 0, 0);
+        if (ch == '\n') interrupt(0x10, 0xE00+'\r', 0, 0, 0);
+        interrupt(0x10, 0xE00+ch, 0, 0, 0);
         i++;
     }
+    if (newline) {
+		interrupt(0x10, 0xE00 + '\n', 0, 0, 0);
+		interrupt(0x10, 0xE00 + '\r', 0, 0, 0);
+	}
 }
 
 void readString(char* string)
@@ -340,9 +351,13 @@ int div(int a, int b)
     return q-1;
 }
 
-void printChar(char c)
+void printChar(char c, int newline)
 {
-    interrupt(0x10, 0xe*256+c, 0, 0, 0);
+    interrupt(0x10, 0xE00+c, 0, 0, 0);
+    if (newline) {
+		interrupt(0x10, 0xE00 + '\n', 0, 0, 0);
+		interrupt(0x10, 0xE00 + '\r', 0, 0, 0);
+	}
 }
 
 void printLogo()
@@ -351,7 +366,7 @@ void printLogo()
     char buffer[FILE_SIZE];
     readFile(buffer, "logo.txt", &success, ROOT);
     fileExceptionHandler(success);
-    printString(buffer);
+    printString(buffer, FALSE);
 }
 
 int strCmp(char* str1 ,char* str2)
@@ -410,14 +425,48 @@ void fileExceptionHandler(int result)
 {
     if (result == FILE_NOT_FOUND || result == FILE_EXIST)
     {
-        printString("File not found/already exist\n");
+        printString("File not found/already exist", TRUE);
     }
     else if (result == FILES_FULL)
     {
-        printString("No empty space in files\n");
+        printString("No empty space in files", TRUE);
     }
     else if (result == SECTORS_FULL)
     {
-        printString("No empty space in sectors\n");
+        printString("No empty space in sectors", TRUE);
     }
+}
+
+void printInt(int i, int newLine) 
+{
+    char integer[10];
+    int digit;
+    int j;
+
+    // Count digit
+    digit = 1;
+    j = i;
+    while (j > 10)
+    {
+        j = div(j, 10);
+        digit++;
+    }
+
+	integer[0] = '0';
+	integer[1] = '0';
+	integer[2] = '0';
+	integer[3] = '0';
+	integer[4] = '0';
+	integer[5] = '0';
+	integer[6] = '0';
+	integer[7] = '0';
+	integer[8] = '0';
+	integer[9] = '\0';
+	j = 8;
+	while (i != 0 && j >= 0) {
+		integer[j] = '0' + mod(i, 10);
+		i = div(i, 10);
+		j -= 1;
+	}
+	printString(integer + 9 - digit, newLine);
 }
