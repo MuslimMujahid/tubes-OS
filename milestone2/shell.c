@@ -38,6 +38,7 @@ void getArg(char* input, char* arg);
 // command methods
 void _ls_(char curDirIndex);
 void _mkdir_(char* dirname, char parentIndex);
+void _cd_(char* dirname, char curDirIndex);
 
 main()
 {
@@ -103,13 +104,10 @@ void commandHandler(int type, char* input, char* curDirIndex)
             pS("You just command cd!", TRUE);
             break;
         case ls:
-            _ls_(0xFF);
+            _ls_(*curDirIndex);
             break;
         case mkdir:
-            pS("You just created a dir", TRUE);
-            // pS(input + 6, TRUE);
-            copy(input + 6, arg);
-            _mkdir_(input + 6, *curDirIndex);
+            _mkdir_(arg, *curDirIndex);
             break;
         default:
             break;
@@ -118,7 +116,13 @@ void commandHandler(int type, char* input, char* curDirIndex)
 
 void copy(char* src, char* dest)
 {
-    dest = src;
+    int i = 0;
+    while (src[i] != '\0')
+    {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0'; 
 }
 
 int strCmp(char* str1, char* str2)
@@ -213,5 +217,25 @@ void getArg(char* input, char* arg)
     {
         i++;
     }
-    copy(input + i, arg);
+    copy(input + i + 1, arg);
+}
+
+void _cd_(char* dirname, char curDirIndex)
+{
+
+}
+
+int isDirExist(char dirname, char curDirIndex)
+{
+    int i;
+    char files[SECTOR_SIZE * 2];
+
+    // Load files
+    interrupt(0x21, 0 << 8 | 0x02, files, FILES_SECTOR_1, 0);
+    interrupt(0x21, 0 << 8 | 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
+
+    for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
+    {
+        
+    }
 }
