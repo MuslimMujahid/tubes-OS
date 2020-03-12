@@ -110,35 +110,36 @@ void printString(char* string)
 void readString(char* string)
 {
     int count = 0;
+    char input;
     while(1)
     {
         /* Call interrupt 0x16 */
         /* interrupt #, AX, BX, CX, DX */
-        char ascii = interrupt(0x16,0,0,0,0);
-        if (ascii == '\r')
+        input = interrupt(0x16,0,0,0,0);
+        if (input == '\r')
         {              
             string[count] = 0x0;
-            interrupt(0x10,0xe*256+'\n',0,0,0);
-            interrupt(0x10,0xe*256+'\r',0,0,0);
+            interrupt(0x10, 0xe*256+'\n', 0, 0, 0);
+            interrupt(0x10, 0xe*256+'\r', 0, 0, 0);
             return;
         }
-        else if (ascii == '\b')
+        else if (input == '\b')
         {
             if (count > 0)
             {
                 string[count] = 0x0;
                 count--;
-                interrupt(0x10,0xe*256+0x8,0,0,0);
+                interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
                 count++;
-                interrupt(0x10,0xe*256+0x0,0,0,0);
+                interrupt(0x10, 0xe*256+0x0, 0, 0 ,0);
                 count--;
-                interrupt(0x10,0xe*256+0x8,0,0,0);
+                interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
             }
         }
         else
         {
-            string[count] = ascii;
-            interrupt(0x10, 0xe*256+ascii, 0, 0, 0);
+            string[count] = input;
+            interrupt(0x10, 0xe*256+input, 0, 0, 0);
             count++;
         }     
     }

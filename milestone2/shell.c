@@ -22,7 +22,9 @@
 
 
 int len(char* string);
-void printString(char *string);
+void pS(char *string, int newLine);
+void pI(int i, int newLine);
+void pC(char c, int newLine);
 int getCommandHandler(char* command);
 int strCmp(char* str1, char* str2);
 
@@ -32,7 +34,7 @@ main()
     int command;
     char* input;
     char* curDir = "$"; // Begin in root
-    printString(curDir);
+    pS(curDir, FALSE);
 
     running = 1;
     while(running)
@@ -41,11 +43,11 @@ main()
         command = getCommandHandler(input);
         if (command == 1)
         {
-            printString("did you just command cd?\n");
+            pS("did you just command cd?", TRUE);
         }
-        printString("You just put a command\n");
+        pS("You just put a command", TRUE);
     }
-    printString("Exitttttttt");
+    pS("Exitttttttt", TRUE);
 }
 
 int len(char* string)
@@ -55,26 +57,26 @@ int len(char* string)
     return i;
 }
 
-void printString(char* string)
-{   
-    int i = 0;
-    while(string[i] != '\0' && string[i])
-    {
-        int ch = string[i];
+void pS(char *string, int newLine)
+{
+    interrupt(0x21, (0 << 8) | 0x0, string, newLine, 0);
+}
 
-        if (ch == '\n')
-            interrupt(0x10, 0xe*256+'\r', 0, 0, 0);
+void pI(int i, int newLine)
+{
+    interrupt(0x21, (0 << 8) | 0x24, i, newLine, 0);
+}
 
-        interrupt(0x10, 0xe*256+ch, 0, 0, 0);
-        i++;
-    }
+void pC(char c, int newLine)
+{
+    interrupt(0x21, (0 << 8) | 0x25, c, newLine, 0);
 }
 
 int getCommandHandler(char* command)
 {
     if (strCmp(command, "cd"))
     {
-        printString("You just used cd command\n");
+        pS("You just used cd command", TRUE);
         return cd;
     }
 }
@@ -85,7 +87,7 @@ int strCmp(char* str1, char* str2)
     int length = len(str1);
 
     if (length != len(str2)){
-        printString("Not to fast! 11111111");
+        pS("Not to fast! 11111111", TRUE);
         return FALSE;
     }
     else
@@ -93,7 +95,7 @@ int strCmp(char* str1, char* str2)
         for (i = 0; i < length; i++)
         {
             if (str1[i] != str2[i]){
-                printString("Not to fast!");
+                pS("Not to fast!", TRUE);
                 break;
             }
         }
