@@ -43,18 +43,20 @@ main()
     char buffer[FILE_SIZE];
 	int suc;
 	makeInterrupt21();
-	printLogo();
-	interrupt(0x21, 0xFF << 8 | 0x4, buffer, "key.txt", &suc);
-    fileExceptionHandler(suc);
-	if (suc == 1)
-	{
-		interrupt(0x21, 0x0, "Key : ", 0, 0);
-	 	interrupt(0x21, 0x0, buffer, 0, 0);
-	}
-	else
-	{
-		interrupt(0x21, 0xFF << 8 | 0x6, "milestone1", 0x2000, &suc);
-	}
+	// printLogo();
+	interrupt(0x21, 0xFF << 8 | 0x6, "shell", 0x2000, &suc);
+
+	// interrupt(0x21, 0xFF << 8 | 0x4, buffer, "key.txt", &suc);
+    // fileExceptionHandler(suc);
+	// if (suc == 1)
+	// {
+	// 	interrupt(0x21, 0x0, "Key : ", 0, 0);
+	//  	interrupt(0x21, 0x0, buffer, 0, 0);
+	// }
+	// else
+	// {
+	// 	interrupt(0x21, 0xFF << 8 | 0x6, "milestone1", 0x2000, &suc);
+	// }
 	while (1);
 } 
 
@@ -107,28 +109,22 @@ void printString(char* string)
 
 void readString(char* string)
 {
-    int dashn = 0xa;
-    int endStr = 0x0;
-    int enter = 0xd;
-    int backsp = 0x8;
-    int dashr = 0xd;
     int count = 0;
-
     while(1)
     {
         /* Call interrupt 0x16 */
         /* interrupt #, AX, BX, CX, DX */
         char ascii = interrupt(0x16,0,0,0,0);
-        if (ascii == enter)
+        if (ascii == '\r')
         {              
             string[count] = 0x0;
-            interrupt(0x10,0xe*256+dashn,0,0,0);
-            interrupt(0x10,0xe*256+dashr,0,0,0);
+            interrupt(0x10,0xe*256+'\n',0,0,0);
+            interrupt(0x10,0xe*256+'\r',0,0,0);
             return;
         }
-        else if (ascii == backsp)
+        else if (ascii == '\b')
         {
-            if (count > 1)
+            if (count > 0)
             {
                 string[count] = 0x0;
                 count--;
@@ -384,10 +380,7 @@ int findFilenameInDir(char* path, char parentIndex)
     i = 0;
     while (path[i] != '\0' && i < 14) i++;
     while (path[i] != '/' && i > 0) i--;
-    if (path[i] == '/') 
-        filenameIndex = i + 1; 
-    else 
-        filenameIndex = 0;
+    if (path[i] == '/') path += i + 1; 
 
     // Find filename in parentIndex
     filefound = 0;
@@ -397,9 +390,9 @@ int findFilenameInDir(char* path, char parentIndex)
         {
             filefound = 1;
             j = 0;
-            while (path[filenameIndex + j] != '\0')
+            while (path[j] != '\0')
             {
-                if (path[filenameIndex + j] != files[i + NAME_OFFSET + j])
+                if (path[j] != files[i + NAME_OFFSET + j])
                 {
                     filefound = 0;
                     break;
