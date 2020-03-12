@@ -237,13 +237,12 @@ void writeFile(char *buffer, char *path, int *sector, char parentIndex)
 
     // Point the files to the sector
     // if its a directory then set S to 0xFF
-    if ((*sector) < 1)
+    if (buffer == 0)
     {
         files[fileIndex + 1] = DIR;
     }
     else
     {
-        printInt(*sector, TRUE);
         files[fileIndex + 1] = sectorindex >> 0x4;
     }
     

@@ -1,6 +1,7 @@
 #define TRUE 1
 #define FALSE 0
 #define SEPARATOR '|'
+#define PATH_DIVIDER '/'
 
 #define SECTOR_SIZE 512
 #define MAP_SECTOR 1
@@ -31,14 +32,18 @@ void pC(char c, int newLine);
 int getCommandHandler(char* command);
 void commandHandler(int type, char* input, char* curDirIndex);
 void copy(char* src, char* dest);
+void copyRange(char* src, char* dest, int l, int h);
 int strCmp(char* str1, char* str2);
 int commandCmp(char* str1, char* str2);
 void getArg(char* input, char* arg);
+int isDirExist(char* dirname, char curDirIndex);
+char getDirIndexByName(char* dirname, char curDirIndex);
+char getParentIndexByCurIndex(char curDirIndex);
 
 // command methods
 void _ls_(char curDirIndex);
 void _mkdir_(char* dirname, char parentIndex);
-void _cd_(char* dirname, char curDirIndex);
+void _cd_(char* dirname, char* curDirIndex);
 
 main()
 {
@@ -101,7 +106,7 @@ void commandHandler(int type, char* input, char* curDirIndex)
     switch (type)
     {
         case cd:
-            pS("You just command cd!", TRUE);
+            _cd_(arg, curDirIndex);
             break;
         case ls:
             _ls_(*curDirIndex);
@@ -123,6 +128,19 @@ void copy(char* src, char* dest)
         i++;
     }
     dest[i] = '\0'; 
+}
+
+void copyRange(char* src, char* dest, int l, int h)
+{
+    int i, j; 
+
+    i = 0;
+    while (src[l + i] != '\0' && i <= h-l)
+    {
+        dest[i] = src[l+i];
+        i++;
+    }
+    dest[l+i] = '\0'; 
 }
 
 int strCmp(char* str1, char* str2)
@@ -207,6 +225,7 @@ void _ls_(char curDirIndex)
 
 void _mkdir_(char* dirname, char parentIndex)
 {
+    int suc;
     interrupt(0x21, (parentIndex << 8) | 0x5, 0, dirname, 0);
 }
 
@@ -220,22 +239,109 @@ void getArg(char* input, char* arg)
     copy(input + i + 1, arg);
 }
 
-void _cd_(char* dirname, char curDirIndex)
+void _cd_(char* dirname, char* curDirIndex)
 {
+    int i, j;
+    char nextDir[14];
+    char tmpDirIndex;
 
+    i = 0;
+    tmpDirIndex = *curDirIndex;
+    while (dirname[i] != '\0')
+    {
+        if (i == 0 || dirname[i] == PATH_DIVIDER)
+        {
+            if (dirname[i] == PATH_DIVIDER) i++;
+            j = i;
+            while (dirname[j] != PATH_DIVIDER && dirname[j] != '\0') 
+            {
+                j++;
+            }
+            if (dirname[j] == PATH_DIVIDER) j--;
+
+            copyRange(dirname, nextDir, i, j);
+
+            if (strCmp(nextDir, ".."))
+            {
+                tmpDirIndex = getParentIndexByCurIndex(tmpDirIndex);
+            }
+            else
+            {
+                if (!isDirExist(nextDir, *curDirIndex))
+                {
+                    pS("There is no such file", TRUE);
+                }
+                else
+                {
+                    tmpDirIndex = getDirIndexByName(nextDir, tmpDirIndex);
+                }
+            }
+        }
+        if (dirname[i] != '\0') i++;
+    }
+    *curDirIndex = tmpDirIndex; 
 }
 
-int isDirExist(char dirname, char curDirIndex)
+int isDirExist(char* dirname, char curDirIndex)
 {
-    int i;
+    int i, j, filefound;
     char files[SECTOR_SIZE * 2];
 
     // Load files
-    interrupt(0x21, 0 << 8 | 0x02, files, FILES_SECTOR_1, 0);
-    interrupt(0x21, 0 << 8 | 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
+    interrupt(0x21, (0 << 8) | 0x02, files, FILES_SECTOR_1, 0);
+    interrupt(0x21, (0 << 8) | 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
+
+    // Find filename in parentIndex
+    filefound = 0;
+    for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
+    {
+        if (files[i] == curDirIndex && files[i + 1] == DIR) // Check only dir
+        {
+            filefound = 1;
+            j = 0;
+            while (dirname[j] != '\0')
+            {
+                if (dirname[j] != files[i + NAME_OFFSET + j])
+                {
+                    filefound = 0;
+                    break;
+                }
+                j++;
+            }
+            if (filefound) return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+char getDirIndexByName(char* dirname, char curDirIndex)
+{
+    int i, j, filefound;
+    char files[SECTOR_SIZE * 2];
+
+    // Load files
+    interrupt(0x21, (0 << 8) | 0x02, files, FILES_SECTOR_1, 0);
+    interrupt(0x21, (0 << 8) | 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
 
     for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
     {
-        
+        if (files[i] == curDirIndex && files[i + 1] == DIR)
+        {
+            if (strCmp(files + i + NAME_OFFSET, dirname))
+            {
+                return (i >> FILES_COLUMNS);
+            }
+        }
     }
+}
+
+char getParentIndexByCurIndex(char curDirIndex)
+{
+    char files[SECTOR_SIZE * 2];
+
+    // Load files
+    interrupt(0x21, (0 << 8) | 0x02, files, FILES_SECTOR_1, 0);
+    interrupt(0x21, (0 << 8) | 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
+
+    return files[curDirIndex * FILES_COLUMNS];
 }
