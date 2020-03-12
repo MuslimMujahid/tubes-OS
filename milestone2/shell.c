@@ -189,7 +189,7 @@ void _ls_(char curDirIndex)
 
     // print all filena,e sin curDirIndex
     pC(' ', FALSE);
-    pS("FILES: ", FALSE);
+    pS(" FILES: ", FALSE);
     for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
     {
         if (files[i + 1] != DIR && files[i] == curDirIndex)
@@ -206,7 +206,7 @@ void _ls_(char curDirIndex)
     pC(' ', TRUE);
 
     pC(' ', FALSE);
-    pS("DIR: ", FALSE);
+    pS(" DIR: ", FALSE);
     for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
     {
         if (files[i + 1] == DIR && files[i] == curDirIndex)
@@ -225,7 +225,11 @@ void _ls_(char curDirIndex)
 
 void _mkdir_(char* dirname, char parentIndex)
 {
-    int suc;
+    if (isDirExist(dirname, parentIndex))
+    {
+        pS(" There is already directory with that name!", TRUE);
+        return;
+    }
     interrupt(0x21, (parentIndex << 8) | 0x5, 0, dirname, 0);
 }
 
@@ -267,9 +271,10 @@ void _cd_(char* dirname, char* curDirIndex)
             }
             else
             {
-                if (!isDirExist(nextDir, *curDirIndex))
+                if (!isDirExist(nextDir, tmpDirIndex))
                 {
-                    pS("There is no such file", TRUE);
+                    pS(nextDir, TRUE);
+                    pS(" There is no such file", TRUE);
                 }
                 else
                 {
@@ -329,7 +334,7 @@ char getDirIndexByName(char* dirname, char curDirIndex)
         {
             if (strCmp(files + i + NAME_OFFSET, dirname))
             {
-                return (i >> FILES_COLUMNS);
+                return (i >> 0x4);
             }
         }
     }
