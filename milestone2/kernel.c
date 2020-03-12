@@ -139,6 +139,12 @@ void readString(char* string)
                 interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
             }
         }
+        else if (input == '\x20') // space
+        {
+            string[count] = '|';
+            interrupt(0x10, 0xe*256+input, 0, 0, 0);
+            count++;
+        }
         else
         {
             string[count] = input;

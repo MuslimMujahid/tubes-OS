@@ -1,5 +1,6 @@
 #define TRUE 1
 #define FALSE 0
+#define SEPARATOR '|'
 
 #define SECTOR_SIZE 512
 #define MAP_SECTOR 1
@@ -22,13 +23,17 @@
 #define ls 2
 #define mkdir 3
 
+// handler
 int len(char* string);
 void pS(char *string, int newLine);
 void pI(int i, int newLine);
 void pC(char c, int newLine);
 int getCommandHandler(char* command);
-void commandHandler(int type, char* curDirIndex);
+void commandHandler(int type, char* input, char* curDirIndex);
+void copy(char* src, char* dest);
 int strCmp(char* str1, char* str2);
+int commandCmp(char* str1, char* str2);
+void getArg(char* input, char* arg);
 
 // command methods
 void _ls_(char curDirIndex);
@@ -47,7 +52,6 @@ main()
     running = 1;
     curDir[0] = '$'; 
     curDirIndex = ROOT; // Begin in root
-
     while(running)
     {
         // Print current directory path
@@ -56,7 +60,7 @@ main()
 
         // Read command
         command = getCommandHandler(input);
-        commandHandler(command, &curDirIndex);          
+        commandHandler(command, input, &curDirIndex);          
     }
 }
 
@@ -84,13 +88,15 @@ void pC(char c, int newLine)
 
 int getCommandHandler(char* command)
 {
-    if (strCmp(command, "cd")) return cd;
-    else if (strCmp(command, "ls")) return ls;
-    else if (strCmp(command, "mkdir")) return mkdir;
+    if (commandCmp(command, "cd")) return cd;
+    else if (commandCmp(command, "ls")) return ls;
+    else if (commandCmp(command, "mkdir")) return mkdir;
 }
 
-void commandHandler(int type, char* curDirIndex)
+void commandHandler(int type, char* input, char* curDirIndex)
 {
+    char arg[100];
+    getArg(input, arg);
     switch (type)
     {
         case cd:
@@ -101,11 +107,18 @@ void commandHandler(int type, char* curDirIndex)
             break;
         case mkdir:
             pS("You just created a dir", TRUE);
-            _mkdir_("tttttttttt", ROOT);
+            // pS(input + 6, TRUE);
+            copy(input + 6, arg);
+            _mkdir_(input + 6, *curDirIndex);
             break;
         default:
             break;
     }
+}
+
+void copy(char* src, char* dest)
+{
+    dest = src;
 }
 
 int strCmp(char* str1, char* str2)
@@ -125,6 +138,21 @@ int strCmp(char* str1, char* str2)
             }
         }
     }
+    return (str1[i] == str2[i]);
+}
+
+int commandCmp(char* str1, char* str2)
+{
+    int i;
+
+    i = 0;
+    while(str1[i] != SEPARATOR && str1[i] != '\0' && str2[i] != '\0')
+    {
+        if (str1[i] != str2[i])
+            break;
+        i++;
+    }
+    if (str1[i] == SEPARATOR) i--;
     return (str1[i] == str2[i]);
 }
 
@@ -176,4 +204,14 @@ void _ls_(char curDirIndex)
 void _mkdir_(char* dirname, char parentIndex)
 {
     interrupt(0x21, (parentIndex << 8) | 0x5, 0, dirname, 0);
+}
+
+void getArg(char* input, char* arg)
+{
+    int i = 0;
+    while (input[i] != SEPARATOR && input[i] != '\0')
+    {
+        i++;
+    }
+    copy(input + i, arg);
 }
