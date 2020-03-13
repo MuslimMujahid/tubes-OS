@@ -96,13 +96,13 @@ main()
             {
                 while (TRUE)
                 {
-                    // pS("Yessss", TRUE);
                     if (curHistory < 3)
                     {
                         for (i = 0; i < len(history + HISTORY_LENGTH*(curHistory)); i++)
                         {
                             interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
                         }
+                        // pS(history + HISTORY_LENGTH*(curHistory), TRUE);
                     }
                     else
                     {
@@ -110,13 +110,14 @@ main()
                         {
                             interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
                         }
+                        // pS(history + HISTORY_LENGTH*3, TRUE);
                     }
                     
                     
                     if (input[len(input)-1] == ARROW)
                     {
                         if (curHistory < 3) curHistory++;
-                        else curHistory = 0;
+                        else curHistory = 1;
                     }
 
                     pS(history + HISTORY_LENGTH*curHistory, FALSE);
