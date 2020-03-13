@@ -27,7 +27,7 @@
 
 void handleInterrupt21 (int AX, int BX, int CX, int DX);
 void printString(char *string, int newline);
-void readString(char *string);
+void readString(char *string, char* ret);
 void writeSector(char *buffer, int sector);
 void readSector(char *buffer, int sector);
 void writeFile(char *buffer, char *path, int *sectors, char parentIndex);
@@ -41,7 +41,8 @@ void printLogo();
 int strCmp(char* str1, char* str2);
 int findFilenameInDir(char* path, char parentIndex);
 void fileExceptionHandler(int result);
-void printInt(int i, int newLine) ;
+void printInt(int i, int newLine);
+int len(char* string);
 
 main()
 {
@@ -65,7 +66,7 @@ void handleInterrupt21 (int AX, int BX, int CX, int DX) {
          printString(BX, CX);
          break;
       case 0x01:
-         readString(BX);
+         readString(BX, CX);
          break;
       case 0x02:
          readSector(BX, CX);
@@ -110,9 +111,9 @@ void printString(char* string, int newline)
 	}
 }
 
-void readString(char* string)
+void readString(char* string, char* ret)
 {
-    int count = 0;
+    int count = len(string);
     char input;
     while(1)
     {
@@ -121,6 +122,7 @@ void readString(char* string)
         input = interrupt(0x16,0,0,0,0);
         if (input == '\r')
         {              
+            *ret = '\r';
             string[count] = 0x0;
             interrupt(0x10, 0xe*256+'\n', 0, 0, 0);
             interrupt(0x10, 0xe*256+'\r', 0, 0, 0);
@@ -145,9 +147,14 @@ void readString(char* string)
             interrupt(0x10, 0xe*256+input, 0, 0, 0);
             count++;
         }
-        else if (input == 0 || input == 1) // arrow up and down
+        else if (input == '\t')
         {
-            if (input == 0) input = '\f';
+            *ret = '\t';
+            return;
+        }
+        else if (input == 0) // arrow up and down
+        {
+            *ret = '\f';
             string[count] = input;
             string[count+1] = 0x0;
             return;
@@ -482,4 +489,11 @@ void printInt(int i, int newLine)
 		j -= 1;
 	}
 	printString(integer + 9 - digit, newLine);
+}
+
+int len(char* string)
+{
+    int i = 0;
+    while (string[i] != '\0') i++;
+    return i;
 }

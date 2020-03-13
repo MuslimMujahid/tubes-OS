@@ -48,8 +48,10 @@ void pC(char c, int newLine);
 void copy(char* src, char* dest);
 void copyRange(char* src, char* dest, int l, int h);
 int strCmp(char* str1, char* str2);
+int strSubset(char* str1, char* str2);
 void concat(char* src, char* dest);
 void addHistory(char* input, char* history);
+void autocompletFileInDir(char* input, char curDirIndex);
 
 // command methods
 void _ls_(char curDirIndex);
@@ -70,6 +72,7 @@ main()
     char history[HISTORY_LENGTH * 4];
     int curHistory;
     int inputLength;
+    int ret;
 
     running = 1;
     curPath[0] = '$'; 
@@ -83,14 +86,13 @@ main()
 
         // Print current directory path
         pS(curPath, FALSE); pC(' ', FALSE);
-        interrupt(0x21, (0 << 8) | 0x1, input, 0, 0);
+        interrupt(0x21, (0 << 8) | 0x1, input, &ret, 0);
 
-        if (input[len(input)-1] == ARROW)
+        // History handler
+        if (ret == ARROW)
         {
             // Add input to history
-            input[len(input)-1] = '\0';
             addHistory(input, history);
-            input[len(input)] = ARROW;
 
             if (history[1] != EMPTY)
             {
@@ -113,8 +115,7 @@ main()
                         // pS(history + HISTORY_LENGTH*3, TRUE);
                     }
                     
-                    
-                    if (input[len(input)-1] == ARROW)
+                    if (ret == ARROW)
                     {
                         if (curHistory < 3) curHistory++;
                         else curHistory = 1;
@@ -123,9 +124,9 @@ main()
                     pS(history + HISTORY_LENGTH*curHistory, FALSE);
                     
                     clear(input, 100);
-                    interrupt(0x21, 0x01, input, 0, 0);
+                    interrupt(0x21, 0x01, input, &ret, 0);
 
-                    if (input[len(input)-1] != ARROW && input[len(input)-1] !='\1') 
+                    if (ret == '\r') 
                     {
                         copy(history + HISTORY_LENGTH*curHistory, input);
                         break;
@@ -133,6 +134,19 @@ main()
                 }
             }
         }
+        else if (ret == '\t')
+        {
+            if (input[0] == '.' && input[1] == '/')
+            {   
+                autocompletFileInDir(input, curDirIndex);
+                while (TRUE)
+                {
+                    interrupt(0x21, 0x01, input, &ret, 0);
+                    if (ret != '\t') break;
+                }
+            }
+        }
+
         // Read command
         command = getCommandHandler(input);
         commandHandler(command, input, &curDirIndex, curPath);      
@@ -318,6 +332,31 @@ void addHistory(char* input, char* history)
     copy(input, history);
 }
 
+void autocompletFileInDir(char* input, char curDirIndex)
+{
+    int i;
+    char files[SECTOR_SIZE * 2];
+    char filename[14];
+
+    // Load files
+    interrupt(0x21, (0 << 8) | 0x02, files, FILES_SECTOR_1, 0);
+    interrupt(0x21, (0 << 8) | 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
+
+    copy(input + 2, filename);
+    for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
+    {
+        if (files[i] == curDirIndex && files[i + 1] != DIR)
+        {
+            if (strSubset(filename, files + i + NAME_OFFSET))
+            {
+                pS(files + i + NAME_OFFSET + len(filename), FALSE);
+                copy(files + i + NAME_OFFSET, input + len(input)-len(filename));
+                break;
+            }
+        }
+    }
+}
+
 int len(char* string)
 {
     int i = 0;
@@ -384,6 +423,21 @@ int strCmp(char* str1, char* str2)
     return (str1[i] == str2[i]);
 }
 
+int strSubset(char* str1, char* str2)
+{
+    int i;
+    int length;;
+
+    length = len(str1);
+    for (i = 0; i < length; i++)
+    {
+        if (str1[i] != str2[i])
+        {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
 
 // ==================== COMMAND METHODS ==================
 void _ls_(char curDirIndex)
