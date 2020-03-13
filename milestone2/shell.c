@@ -106,16 +106,13 @@ main()
                         {
                             interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
                         }
-                        // pS(history + HISTORY_LENGTH*(curHistory), TRUE);
                     }
                     else
                     {
-                        pS("Sini", TRUE);
                         for (i = 0; i < len(history + HISTORY_LENGTH*3); i++)
                         {
                             interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
                         }
-                        // pS(history + HISTORY_LENGTH*3, TRUE);
                     }
                     
                     if (ret == ARROW)
@@ -378,7 +375,12 @@ void autoCompletePath(char* input, char curDirIndex)
 
     getArg(input, path);
     lastPathDivider = len(path);
-    while (path[lastPathDivider] != PATH_DIVIDER) lastPathDivider--;
+    while (path[lastPathDivider] != PATH_DIVIDER && lastPathDivider > 0) lastPathDivider--;
+    if (lastPathDivider == 0)
+    {
+        autoCompletDirInDir(input, path, curDirIndex);
+        return;
+    }
     i = 0;
     while (path[i] != '\0' && i < lastPathDivider)
     {
