@@ -52,6 +52,8 @@ int strSubset(char* str1, char* str2);
 void concat(char* src, char* dest);
 void addHistory(char* input, char* history);
 void autocompletFileInDir(char* input, char curDirIndex);
+void autoCompletePath(char* input, char curDirIndex);
+void autoCompletDirInDir(char* input, char* filename, char curDirIndex);
 
 // command methods
 void _ls_(char curDirIndex);
@@ -108,6 +110,7 @@ main()
                     }
                     else
                     {
+                        pS("Sini", TRUE);
                         for (i = 0; i < len(history + HISTORY_LENGTH*3); i++)
                         {
                             interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
@@ -139,6 +142,16 @@ main()
             if (input[0] == '.' && input[1] == '/')
             {   
                 autocompletFileInDir(input, curDirIndex);
+                while (TRUE)
+                {
+                    interrupt(0x21, 0x01, input, &ret, 0);
+                    if (ret != '\t') break;
+                }
+            }
+            else if (input[0] == 'c' && input[1] == 'd' && input[2] == ' ')
+            {
+                // pS("Masuk", TRUE);
+                autoCompletePath(input, curDirIndex);
                 while (TRUE)
                 {
                     interrupt(0x21, 0x01, input, &ret, 0);
@@ -346,6 +359,71 @@ void autocompletFileInDir(char* input, char curDirIndex)
     for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
     {
         if (files[i] == curDirIndex && files[i + 1] != DIR)
+        {
+            if (strSubset(filename, files + i + NAME_OFFSET))
+            {
+                pS(files + i + NAME_OFFSET + len(filename), FALSE);
+                copy(files + i + NAME_OFFSET, input + len(input)-len(filename));
+                break;
+            }
+        }
+    }
+}
+
+void autoCompletePath(char* input, char curDirIndex)
+{
+    int i, j, lastPathDivider;
+    char nextDir[14];
+    char path[64];
+
+    getArg(input, path);
+    lastPathDivider = len(path);
+    while (path[lastPathDivider] != PATH_DIVIDER) lastPathDivider--;
+    i = 0;
+    while (path[i] != '\0' && i < lastPathDivider)
+    {
+        if (i == 0 || path[i] == PATH_DIVIDER)
+        {
+            if (path[i] == PATH_DIVIDER) i++;
+            j = i;
+            while (path[j] != PATH_DIVIDER && path[j] != '\0') 
+            {
+                j++;
+            }
+            if (path[j] == PATH_DIVIDER) j--;
+
+            copyRange(path, nextDir, i, j);
+
+            if (strCmp(nextDir, ".."))
+            {
+                curDirIndex = getParentIndexByCurIndex(curDirIndex);
+            }
+            else
+            {
+                if (isDirExist(nextDir, curDirIndex))
+                {
+                    curDirIndex = getDirIndexByName(nextDir, curDirIndex);
+                } else return;
+                
+            }
+        }
+        i++;
+    }   
+    autoCompletDirInDir(input, path + lastPathDivider + 1, curDirIndex);
+}
+
+void autoCompletDirInDir(char* input, char* filename, char curDirIndex)
+{
+    int i;
+    char files[SECTOR_SIZE * 2];
+
+    // Load files
+    interrupt(0x21, (0 << 8) | 0x02, files, FILES_SECTOR_1, 0);
+    interrupt(0x21, (0 << 8) | 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
+
+    for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
+    {
+        if (files[i] == curDirIndex && files[i + 1] == DIR)
         {
             if (strSubset(filename, files + i + NAME_OFFSET))
             {
