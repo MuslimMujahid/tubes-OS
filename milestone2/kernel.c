@@ -2,10 +2,10 @@
 #define FALSE 0
 
 #define SECTOR_SIZE 512
-#define MAP_SECTOR 1
-#define FILES_SECTOR_1 2
-#define FILES_SECTOR_2 3
-#define SECTORS_SECTOR 4
+#define MAP_SECTOR 256
+#define FILES_SECTOR_1 257
+#define FILES_SECTOR_2 258
+#define SECTORS_SECTOR 259
 #define MAX_BYTE 256
 #define MAX_FILES 32
 #define FILE_SIZE 8192

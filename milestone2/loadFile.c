@@ -7,10 +7,10 @@
 #include <stdio.h>
 
 #define SECTOR_SIZE 512
-#define MAP_SECTOR 1
-#define FILES_SECTOR_1 2
-#define FILES_SECTOR_2 3
-#define SECTORS_SECTOR 4
+#define MAP_SECTOR 256
+#define FILES_SECTOR_1 257
+#define FILES_SECTOR_2 258
+#define SECTORS_SECTOR 259
 #define MAX_BYTE 512
 #define NAME_OFFSET 2
 #define SECTORS_COLUMNS 16
@@ -154,6 +154,4 @@ void main(int argc, char* argv[]) {
   writeSector(files + SECTOR_SIZE, floppy, FILES_SECTOR_2);
   writeSector(sectors, floppy, SECTORS_SECTOR);
 
-  fclose(floppy);
-  fclose(loadFil);
 }
