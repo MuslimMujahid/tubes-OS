@@ -215,6 +215,8 @@ int isDirExist(char* dirname, char curDirIndex)
     filefound = 0;
     for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
     {
+        
+        
         if (files[i] == curDirIndex && files[i + 1] == DIR) // Check only dir
         {
             filefound = 1;
@@ -228,7 +230,7 @@ int isDirExist(char* dirname, char curDirIndex)
                 }
                 j++;
             }
-            if (filefound) return TRUE;
+            if (filefound) return TRUE; 
         }
     }
     return FALSE;
@@ -482,9 +484,10 @@ void _cd_(char* dirname, char* curDirIndex, char* curPath)
                 else
                 {
                     tmpDirIndex = getDirIndexByName(nextDir, tmpDirIndex);
+                    concat(curPath, "/");
+                    concat(curPath, nextDir);
                 }
-                concat(curPath, "/");
-                concat(curPath, nextDir);
+                
             }
         }
         if (dirname[i] != '\0') i++;
