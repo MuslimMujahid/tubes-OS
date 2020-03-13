@@ -141,9 +141,16 @@ void readString(char* string)
         }
         else if (input == '\x20') // space
         {
-            string[count] = '|';
+            string[count] = ' ';
             interrupt(0x10, 0xe*256+input, 0, 0, 0);
             count++;
+        }
+        else if (input == 0 || input == 1) // arrow up and down
+        {
+            if (input == 0) input = '\f';
+            string[count] = input;
+            string[count+1] = 0x0;
+            return;
         }
         else
         {
@@ -349,7 +356,6 @@ int mod(int a, int b)
         a = a - b;
     return a;
 }
-
 int div(int a, int b)
 {
     int q = 0;

@@ -1,7 +1,8 @@
 #define TRUE 1
 #define FALSE 0
-#define SEPARATOR '|'
+#define SEPARATOR ' '
 #define PATH_DIVIDER '/'
+#define ARROW '\f'
 
 #define SECTOR_SIZE 512
 #define MAP_SECTOR 1
@@ -28,6 +29,8 @@
 #define bin 5
 
 // handler
+#define HISTORY_LENGTH 64
+
 int getCommandHandler(char* command);
 void commandHandler(int type, char* input, char* curDirIndex, char* curPath);
 int commandCmp(char* str1, char* str2);
@@ -37,6 +40,7 @@ int isFileExist(char* dirname, char curDirIndex);
 char getDirIndexByName(char* dirname, char curDirIndex);
 char getParentIndexByCurIndex(char curDirIndex);
 
+void clear(char *buffer, int length); 
 int len(char* string);
 void pS(char *string, int newLine);
 void pI(int i, int newLine);
@@ -45,6 +49,7 @@ void copy(char* src, char* dest);
 void copyRange(char* src, char* dest, int l, int h);
 int strCmp(char* str1, char* str2);
 void concat(char* src, char* dest);
+void addHistory(char* input, char* history);
 
 // command methods
 void _ls_(char curDirIndex);
@@ -55,26 +60,84 @@ void _bin_(char* filename);
 
 main()
 {
+    int i;
     int running;
     int command;
     char input[100];
-    char argInput[100];
     char curPath[100]; 
     char curDirIndex;
     char files[SECTOR_SIZE * 2];
+    char history[HISTORY_LENGTH * 4];
+    int curHistory;
+    int inputLength;
 
     running = 1;
     curPath[0] = '$'; 
     curDirIndex = ROOT; // Begin in root
     while(running)
     {
+        curHistory = 0;
+
+        // clear input container
+        clear(input, 100);
+
         // Print current directory path
         pS(curPath, FALSE); pC(' ', FALSE);
         interrupt(0x21, (0 << 8) | 0x1, input, 0, 0);
 
+        if (input[len(input)-1] == ARROW)
+        {
+            // Add input to history
+            input[len(input)-1] = '\0';
+            addHistory(input, history);
+            input[len(input)] = ARROW;
+
+            if (history[1] != EMPTY)
+            {
+                while (TRUE)
+                {
+                    // pS("Yessss", TRUE);
+                    if (curHistory < 3)
+                    {
+                        for (i = 0; i < len(history + HISTORY_LENGTH*(curHistory)); i++)
+                        {
+                            interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
+                        }
+                    }
+                    else
+                    {
+                        for (i = 0; i < len(history + HISTORY_LENGTH*3); i++)
+                        {
+                            interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
+                        }
+                    }
+                    
+                    
+                    if (input[len(input)-1] == ARROW)
+                    {
+                        if (curHistory < 3) curHistory++;
+                        else curHistory = 0;
+                    }
+
+                    pS(history + HISTORY_LENGTH*curHistory, FALSE);
+                    
+                    clear(input, 100);
+                    interrupt(0x21, 0x01, input, 0, 0);
+
+                    if (input[len(input)-1] != ARROW && input[len(input)-1] !='\1') 
+                    {
+                        copy(history + HISTORY_LENGTH*curHistory, input);
+                        break;
+                    }
+                }
+            }
+        }
         // Read command
         command = getCommandHandler(input);
-        commandHandler(command, input, &curDirIndex, curPath);          
+        commandHandler(command, input, &curDirIndex, curPath);      
+
+        // Add command to history
+        addHistory(input, history);
     }
 }
 
@@ -234,6 +297,24 @@ char getParentIndexByCurIndex(char curDirIndex)
     return files[curDirIndex * FILES_COLUMNS];
 }
 
+void clear(char *buffer, int length)
+{
+    int i = 0;
+    for (i = 0; i < length; i++)
+      buffer[i] = 0x0;
+}
+
+void addHistory(char* input, char* history)
+{
+    int i;
+    for (i = HISTORY_LENGTH * 2; i >= 0; i -= HISTORY_LENGTH)
+    {
+        clear(history + i + HISTORY_LENGTH, HISTORY_LENGTH);
+        copy(history + i, history + i + HISTORY_LENGTH);
+    }
+    copy(input, history);
+}
+
 int len(char* string)
 {
     int i = 0;
@@ -357,8 +438,6 @@ void _mkdir_(char* dirname, char parentIndex)
     interrupt(0x21, (parentIndex << 8) | 0x5, 0, dirname, 0);
 }
 
-
-
 void _cd_(char* dirname, char* curDirIndex, char* curPath)
 {
     int i, j;
@@ -397,8 +476,7 @@ void _cd_(char* dirname, char* curDirIndex, char* curPath)
             {
                 if (!isDirExist(nextDir, tmpDirIndex))
                 {
-                    pS(nextDir, TRUE);
-                    pS(" There is no such file", TRUE);
+                    pS(" There is no such file or directory", TRUE);
                 }
                 else
                 {
@@ -431,7 +509,7 @@ void _run_(char* filename, char curDirIndex)
 {
     if (!isFileExist(filename, curDirIndex))
     {
-        pS("There is no such file!", TRUE);
+        pS("There is no such file or directory!", TRUE);
         return;
     }
     interrupt(0x21, (curDirIndex << 8) | 0x6, filename, 0x3000, 0);
