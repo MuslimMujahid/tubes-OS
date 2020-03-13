@@ -147,7 +147,6 @@ main()
             }
             else if (input[0] == 'c' && input[1] == 'd' && input[2] == ' ')
             {
-                // pS("Masuk", TRUE);
                 autoCompletePath(input, curDirIndex);
                 while (TRUE)
                 {
@@ -595,8 +594,8 @@ void _cd_(char* dirname, char* curDirIndex, char* curPath)
             }
             if (dirname[j] == PATH_DIVIDER) j--;
 
+            clear(nextDir, 14);
             copyRange(dirname, nextDir, i, j);
-
             if (strCmp(nextDir, ".."))
             {
                 j = 0;
@@ -624,7 +623,7 @@ void _cd_(char* dirname, char* curDirIndex, char* curPath)
                 
             }
         }
-        if (dirname[i] != '\0') i++;
+        i++;
     }
     *curDirIndex = tmpDirIndex; 
 }
