@@ -51,9 +51,9 @@ int strCmp(char* str1, char* str2);
 int strSubset(char* str1, char* str2);
 void concat(char* src, char* dest);
 void addHistory(char* input, char* history);
-void autocompletFileInDir(char* input, char curDirIndex);
+void autocompleteFileInDir(char* input, char curDirIndex);
 void autoCompletePath(char* input, char curDirIndex);
-void autoCompletDirInDir(char* input, char* filename, char curDirIndex);
+void autoCompleteDirInDir(char* input, char* filename, char curDirIndex);
 
 // command methods
 void _ls_(char curDirIndex);
@@ -138,7 +138,7 @@ main()
         {
             if (input[0] == '.' && input[1] == '/')
             {   
-                autocompletFileInDir(input, curDirIndex);
+                autocompleteFileInDir(input, curDirIndex);
                 while (TRUE)
                 {
                     interrupt(0x21, 0x01, input, &ret, 0);
@@ -341,7 +341,7 @@ void addHistory(char* input, char* history)
     copy(input, history);
 }
 
-void autocompletFileInDir(char* input, char curDirIndex)
+void autocompleteFileInDir(char* input, char curDirIndex)
 {
     int i;
     char files[SECTOR_SIZE * 2];
@@ -377,7 +377,7 @@ void autoCompletePath(char* input, char curDirIndex)
     while (path[lastPathDivider] != PATH_DIVIDER && lastPathDivider > 0) lastPathDivider--;
     if (lastPathDivider == 0)
     {
-        autoCompletDirInDir(input, path, curDirIndex);
+        autoCompleteDirInDir(input, path, curDirIndex);
         return;
     }
     i = 0;
@@ -410,10 +410,10 @@ void autoCompletePath(char* input, char curDirIndex)
         }
         i++;
     }   
-    autoCompletDirInDir(input, path + lastPathDivider + 1, curDirIndex);
+    autoCompleteDirInDir(input, path + lastPathDivider + 1, curDirIndex);
 }
 
-void autoCompletDirInDir(char* input, char* filename, char curDirIndex)
+void autoCompleteDirInDir(char* input, char* filename, char curDirIndex)
 {
     int i;
     char files[SECTOR_SIZE * 2];
