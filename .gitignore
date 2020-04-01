@@ -10,4 +10,5 @@
 ### Above combination will ignore all files without extension ###
 *.img
 *.o
-bochsout.txt
+*bochsout.txt
+*.vscode*
