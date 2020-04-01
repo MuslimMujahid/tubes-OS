@@ -539,40 +539,39 @@ void _ls_(char curDirIndex)
     interrupt(0x21, 0 << 8 | 0x02, files, FILES_SECTOR_1, 0);
     interrupt(0x21, 0 << 8 | 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
 
-    // print all filena,e sin curDirIndex
-    pC(' ', FALSE);
-    pS(" FILES: ", FALSE);
     for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
     {
-        if (files[i + 1] != DIR && files[i] == curDirIndex)
+        if (files[i] == curDirIndex)
         {
-            j = 0;
-            while (files[i + NAME_OFFSET + j] != '\0' && j < 14)
-            {
-                pC(files[i + NAME_OFFSET + j], FALSE);
-                j++;
-            }
-            pC(' ', FALSE);
-        }
-    }
-    pC(' ', TRUE);
+            (files[i + 1] == DIR) ? pS("[d] ", FALSE):pS("[f] ", FALSE);
 
-    pC(' ', FALSE);
-    pS(" DIR: ", FALSE);
-    for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
-    {
-        if (files[i + 1] == DIR && files[i] == curDirIndex)
-        {
-            j = 0;
+            j = 0;            
             while (files[i + NAME_OFFSET + j] != '\0' && j < 14)
             {
                 pC(files[i + NAME_OFFSET + j], FALSE);
                 j++;
             }
-            pC(' ', FALSE);
+            pC(' ', TRUE);
         }
     }
-    pC(' ', TRUE);
+    // pC(' ', TRUE);
+
+    // pC(' ', FALSE);
+    // pS(" DIR: ", FALSE);
+    // for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
+    // {
+    //     if (files[i + 1] == DIR && files[i] == curDirIndex)
+    //     {
+    //         j = 0;
+    //         while (files[i + NAME_OFFSET + j] != '\0' && j < 14)
+    //         {
+    //             pC(files[i + NAME_OFFSET + j], FALSE);
+    //             j++;
+    //         }
+    //         pC(' ', FALSE);
+    //     }
+    // }
+    // pC(' ', TRUE);
 }
 
 void _mkdir_(char* dirname, char parentIndex)
