@@ -30,11 +30,12 @@
 
 // handler
 #define HISTORY_LENGTH 64
+#define ARGC_LENGTH 10
+#define ARGV_LENGTH 64
 
-int getCommandHandler(char* command);
-void commandHandler(int type, char* input, char* curDirIndex, char* curPath);
-int commandCmp(char* str1, char* str2);
-void getArg(char* input, char* arg);
+int getCommandType(char* argc);
+void commandHandler(int type, char* argc, char* argv, char* curDirIndex, char* curPath);
+void getArg(char* input, char* argc, char* argv);
 int isDirExist(char* dirname, char curDirIndex);
 int isFileExist(char* dirname, char curDirIndex);
 char getDirIndexByName(char* dirname, char curDirIndex);
@@ -53,7 +54,7 @@ void concat(char* src, char* dest);
 void addHistory(char* input, char* history);
 void autocompleteFileInDir(char* input, char curDirIndex);
 void autoCompletePath(char* input, char curDirIndex);
-void autoCompleteDirInDir(char* input, char* filename, char curDirIndex);
+void autoCompleteDirInDir(char* input, char* dirname, char curDirIndex);
 
 // command methods
 void _ls_(char curDirIndex);
@@ -66,15 +67,21 @@ main()
 {
     int i;
     int running;
-    int command;
+    int type;
     char input[100];
-    char curPath[100]; 
+    char curPath[100];
+    char argc[10];
+    char argv[64]; 
     char curDirIndex;
     char files[SECTOR_SIZE * 2];
     char history[HISTORY_LENGTH * 4];
     int curHistory;
     int inputLength;
     int ret;
+
+    clear(curPath, 100);
+    clear(argc, 10);
+    clear(argv, 64);
 
     running = 1;
     curPath[0] = '$'; 
@@ -156,9 +163,10 @@ main()
             }
         }
 
-        // Read command
-        command = getCommandHandler(input);
-        commandHandler(command, input, &curDirIndex, curPath);      
+        // Read commandget
+        getArg(input, argc, argv);
+        type = getCommandType(argc);
+        commandHandler(type, argc, argv, &curDirIndex, curPath);      
 
         // Add command to history
         addHistory(input, history);
@@ -166,63 +174,65 @@ main()
 }
 
 // ================= HANDLER =====================
-int getCommandHandler(char* command)
+int getCommandType(char* argc)
 {
-    if (commandCmp(command, "cd")) return cd;
-    else if (commandCmp(command, "ls")) return ls;
-    else if (commandCmp(command, "mkdir")) return mkdir;
-    else if (command[0] == '.' && command[1] == '/') return run;
+    if (strCmp(argc, "cd")) return cd;
+    else if (strCmp(argc, "ls")) return ls;
+    else if (strCmp(argc, "mkdir")) return mkdir;
+    else if (strCmp(argc, "./")) return run;
     else return bin;
     
 }
-void commandHandler(int type, char* input, char* curDirIndex, char* curPath)
+
+void commandHandler(int type, char* argc, char* argv, char* curDirIndex, char* curPath)
 {
-    char arg[100];
-    getArg(input, arg);
     switch (type)
     {
         case cd:
-            _cd_(arg, curDirIndex, curPath);
+            _cd_(argv, curDirIndex, curPath);
             break;
         case ls:
             _ls_(*curDirIndex);
             break;
         case mkdir:
-            _mkdir_(arg, *curDirIndex);
+            _mkdir_(argv, *curDirIndex);
             break;
         case run:
-            _run_(input + 2, *curDirIndex);
+            _run_(argv, *curDirIndex);
             break;
         case bin:
-            _bin_(input);
+            _bin_(argc);
         default:
             break;
     }
 }
 
-int commandCmp(char* str1, char* str2)
+void getArg(char* input, char* argc, char* argv)
 {
     int i;
 
-    i = 0;
-    while(str1[i] != SEPARATOR && str1[i] != '\0' && str2[i] != '\0')
+    if (input[0] == '.' && input[1] == '/')
+    // Command in form ""./filename"
     {
-        if (str1[i] != str2[i])
-            break;
-        i++;
-    }
-    if (str1[i] == SEPARATOR) i--;
-    return (str1[i] == str2[i]);
-}
+        copyRange(input, argc, 0, 1);
+    }    
+    else
+    {
+        i = 0;
+        while(input[i] != SEPARATOR && input[i] != '\0') i++;
 
-void getArg(char* input, char* arg)
-{
-    int i = 0;
-    while (input[i] != SEPARATOR && input[i] != '\0')
-    {
-        i++;
+        if (input[i] == SEPARATOR)
+        // Command in form "command path"
+        {
+            copyRange(input, argc, 0, i-1);
+            copy(input + i + 1, argv);
+        }
+        // Command in form "command" or "filename"
+        else
+        {
+            copy(input, argc);
+        }
     }
-    copy(input + i + 1, arg);
 }
 
 int isDirExist(char* dirname, char curDirIndex)
@@ -370,30 +380,31 @@ void autoCompletePath(char* input, char curDirIndex)
 {
     int i, j, lastPathDivider;
     char nextDir[14];
-    char path[64];
+    char argc[10];
+    char argv[64];
 
-    getArg(input, path);
-    lastPathDivider = len(path);
-    while (path[lastPathDivider] != PATH_DIVIDER && lastPathDivider > 0) lastPathDivider--;
+    getArg(input, argc, argv);
+    lastPathDivider = len(argv);
+    while (argv[lastPathDivider] != PATH_DIVIDER && lastPathDivider > 0) lastPathDivider--;
     if (lastPathDivider == 0)
     {
-        autoCompleteDirInDir(input, path, curDirIndex);
+        autoCompleteDirInDir(input, argv, curDirIndex);
         return;
     }
     i = 0;
-    while (path[i] != '\0' && i < lastPathDivider)
+    while (argv[i] != '\0' && i < lastPathDivider)
     {
-        if (i == 0 || path[i] == PATH_DIVIDER)
+        if (i == 0 || argv[i] == PATH_DIVIDER)
         {
-            if (path[i] == PATH_DIVIDER) i++;
+            if (argv[i] == PATH_DIVIDER) i++;
             j = i;
-            while (path[j] != PATH_DIVIDER && path[j] != '\0') 
+            while (argv[j] != PATH_DIVIDER && argv[j] != '\0') 
             {
                 j++;
             }
-            if (path[j] == PATH_DIVIDER) j--;
+            if (argv[j] == PATH_DIVIDER) j--;
 
-            copyRange(path, nextDir, i, j);
+            copyRange(argv, nextDir, i, j);
 
             if (strCmp(nextDir, ".."))
             {
@@ -410,10 +421,10 @@ void autoCompletePath(char* input, char curDirIndex)
         }
         i++;
     }   
-    autoCompleteDirInDir(input, path + lastPathDivider + 1, curDirIndex);
+    autoCompleteDirInDir(input, argv + lastPathDivider + 1, curDirIndex);
 }
 
-void autoCompleteDirInDir(char* input, char* filename, char curDirIndex)
+void autoCompleteDirInDir(char* input, char* dirname, char curDirIndex)
 {
     int i;
     char files[SECTOR_SIZE * 2];
@@ -426,10 +437,10 @@ void autoCompleteDirInDir(char* input, char* filename, char curDirIndex)
     {
         if (files[i] == curDirIndex && files[i + 1] == DIR)
         {
-            if (strSubset(filename, files + i + NAME_OFFSET))
+            if (strSubset(dirname, files + i + NAME_OFFSET))
             {
-                pS(files + i + NAME_OFFSET + len(filename), FALSE);
-                copy(files + i + NAME_OFFSET, input + len(input)-len(filename));
+                pS(files + i + NAME_OFFSET + len(dirname), FALSE);
+                copy(files + i + NAME_OFFSET, input + len(input)-len(dirname));
                 break;
             }
         }
