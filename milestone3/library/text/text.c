@@ -2,7 +2,7 @@
 #include "../mat/mat.h"
 
 void pS(char* string, int newline)
-{   
+{
     char ch;
     int i = 0;
     while(string[i] != '\0')
@@ -13,20 +13,20 @@ void pS(char* string, int newline)
         i++;
     }
     if (newline) {
-		pC('\r', TRUE);
-	}
+		    pC('\r', TRUE);
+	  }
 }
 
 void pC(char c, int newline)
 {
     interrupt(0x10, 0xE00+c, 0, 0, 0);
     if (newline) {
-		interrupt(0x10, 0xE00 + '\n', 0, 0, 0);
-		interrupt(0x10, 0xE00 + '\r', 0, 0, 0);
-	}
+		    interrupt(0x10, 0xE00 + '\n', 0, 0, 0);
+		    interrupt(0x10, 0xE00 + '\r', 0, 0, 0);
+	  }
 }
 
-void pI(int i, int newLine) 
+void pI(int i, int newLine)
 {
     char integer[10];
     int digit;
@@ -41,23 +41,23 @@ void pI(int i, int newLine)
         digit++;
     }
 
-	integer[0] = '0';
-	integer[1] = '0';
-	integer[2] = '0';
-	integer[3] = '0';
-	integer[4] = '0';
-	integer[5] = '0';
-	integer[6] = '0';
-	integer[7] = '0';
-	integer[8] = '0';
-	integer[9] = '\0';
-	j = 8;
-	while (i != 0 && j >= 0) {
-		integer[j] = '0' + mod(i, 10);
-		i = div(i, 10);
-		j -= 1;
-	}
-	pS(integer + 9 - digit, newLine);
+	  integer[0] = '0';
+	  integer[1] = '0';
+	  integer[2] = '0';
+	  integer[3] = '0';
+	  integer[4] = '0';
+	  integer[5] = '0';
+	  integer[6] = '0';
+	  integer[7] = '0';
+	  integer[8] = '0';
+	  integer[9] = '\0';
+	  j = 8;
+	  while (i != 0 && j >= 0) {
+		    integer[j] = '0' + mod(i, 10);
+		    i = div(i, 10);
+		    j -= 1;
+	  }
+	  pS(integer + 9 - digit, newLine);
 }
 
 int len(char* string)
@@ -71,7 +71,7 @@ void clear(char *buffer, int length)
 {
     int i = 0;
     for (i = 0; i < length; i++)
-      buffer[i] = 0x0;
+        buffer[i] = 0x0;
 }
 
 void copy(char* src, char* dest)
@@ -82,12 +82,12 @@ void copy(char* src, char* dest)
         dest[i] = src[i];
         i++;
     }
-    dest[i] = '\0'; 
+    dest[i] = '\0';
 }
 
 void copyRange(char* src, char* dest, int l, int h)
 {
-    int i, j; 
+    int i, j;
 
     i = 0;
     while (src[l + i] != '\0' && i <= h-l)
@@ -95,7 +95,7 @@ void copyRange(char* src, char* dest, int l, int h)
         dest[i] = src[l+i];
         i++;
     }
-    dest[l+i] = '\0'; 
+    dest[l+i] = '\0';
 }
 
 int strCmp(char* str1, char* str2)
