@@ -195,12 +195,14 @@ void getCommandType(char* argc, char* type)
 
 void commandHandler(int type, char* argc, char* argv, char* curDirIndex, char* curPath)
 {
+    int test;
     switch (type)
     {
         case cd:
             _cd_(argv, curDirIndex, curPath);
             break;
         case ls:
+            // interrupt(0x21, 0xFF << 8 | 0x6, "ls", 0x4000, &test);
             _ls_(*curDirIndex);
             break;
         case mkdir:
