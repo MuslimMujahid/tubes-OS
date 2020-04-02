@@ -9,6 +9,7 @@
 #define FILES_SECTOR_1 257
 #define FILES_SECTOR_2 258
 #define SECTORS_SECTOR 259
+#define ARGS_SECTOR 512
 #define MAX_BYTE 256
 #define MAX_FILES 32
 #define FILE_SIZE 8192
@@ -33,9 +34,8 @@
 #define ARGC_LENGTH 10
 #define ARGV_LENGTH 64
 
-int getCommandType(char* argc);
+void getCommandType(char* argc, char* type);
 void commandHandler(int type, char* argc, char* argv, char* curDirIndex, char* curPath);
-void getArg(char* input, char* argc, char* argv);
 int isDirExist(char* dirname, char curDirIndex);
 int isFileExist(char* dirname, char curDirIndex);
 char getDirIndexByName(char* dirname, char curDirIndex);
@@ -56,6 +56,11 @@ void autocompleteFileInDir(char* input, char curDirIndex);
 void autoCompletePath(char* input, char curDirIndex);
 void autoCompleteDirInDir(char* input, char* dirname, char curDirIndex);
 
+void splitArgs(char* input, char* argc, char* argv);
+void putArgs(char curDirIndex, char argc, char* argv);
+void getArgc(char* argc);   
+void getArgv(int index, char* argv);
+
 // command methods
 void _ls_(char curDirIndex);
 void _mkdir_(char* dirname, char parentIndex);
@@ -66,12 +71,14 @@ void _bin_(char* filename);
 main()
 {
     int i;
+    int tmp;
+    char tmp2[10];
     int running;
     int type;
     char input[100];
     char curPath[100];
-    char argc[10];
-    char argv[64]; 
+    char argc[ARGC_LENGTH];
+    char argv[ARGV_LENGTH]; 
     char curDirIndex;
     char files[SECTOR_SIZE * 2];
     char history[HISTORY_LENGTH * 4];
@@ -80,8 +87,6 @@ main()
     int ret;
 
     clear(curPath, 100);
-    clear(argc, 10);
-    clear(argv, 64);
 
     running = 1;
     curPath[0] = '$'; 
@@ -92,6 +97,9 @@ main()
 
         // clear input container
         clear(input, 100);
+        clear(argc, ARGC_LENGTH);
+        clear(argv, ARGV_LENGTH);
+        clear(tmp2, 10);
 
         // Print current directory path
         pS(curPath, FALSE); pC(' ', FALSE);
@@ -164,8 +172,10 @@ main()
         }
 
         // Read commandget
-        getArg(input, argc, argv);
-        type = getCommandType(argc);
+        splitArgs(input, argc, argv);
+        getCommandType(argc, &type);
+        putArgs(curDirIndex, type, argv);
+
         commandHandler(type, argc, argv, &curDirIndex, curPath);      
 
         // Add command to history
@@ -174,14 +184,13 @@ main()
 }
 
 // ================= HANDLER =====================
-int getCommandType(char* argc)
+void getCommandType(char* argc, char* type)
 {
-    if (strCmp(argc, "cd")) return cd;
-    else if (strCmp(argc, "ls")) return ls;
-    else if (strCmp(argc, "mkdir")) return mkdir;
-    else if (strCmp(argc, "./")) return run;
-    else return bin;
-    
+    if (strCmp(argc, "cd")) *type = cd;
+    else if (strCmp(argc, "ls")) *type = ls;
+    else if (strCmp(argc, "mkdir")) *type = mkdir;
+    else if (strCmp(argc, "./")) *type = run;
+    else *type = bin;
 }
 
 void commandHandler(int type, char* argc, char* argv, char* curDirIndex, char* curPath)
@@ -204,34 +213,6 @@ void commandHandler(int type, char* argc, char* argv, char* curDirIndex, char* c
             _bin_(argc);
         default:
             break;
-    }
-}
-
-void getArg(char* input, char* argc, char* argv)
-{
-    int i;
-
-    if (input[0] == '.' && input[1] == '/')
-    // Command in form ""./filename"
-    {
-        copyRange(input, argc, 0, 1);
-    }    
-    else
-    {
-        i = 0;
-        while(input[i] != SEPARATOR && input[i] != '\0') i++;
-
-        if (input[i] == SEPARATOR)
-        // Command in form "command path"
-        {
-            copyRange(input, argc, 0, i-1);
-            copy(input + i + 1, argv);
-        }
-        // Command in form "command" or "filename"
-        else
-        {
-            copy(input, argc);
-        }
     }
 }
 
@@ -383,7 +364,7 @@ void autoCompletePath(char* input, char curDirIndex)
     char argc[10];
     char argv[64];
 
-    getArg(input, argc, argv);
+    splitArgs(input, argc, argv);
     lastPathDivider = len(argv);
     while (argv[lastPathDivider] != PATH_DIVIDER && lastPathDivider > 0) lastPathDivider--;
     if (lastPathDivider == 0)
@@ -670,4 +651,81 @@ void _bin_(char* filename)
         return;
     }
     interrupt(0x21, (BIN_INDEX << 8) | 0x6, filename, 0x3000, 0);
+}
+
+void splitArgs(char* input, char* argc, char* argv)
+{
+    int i;
+
+    if (input[0] == '.' && input[1] == '/')
+    // Command in form ""./filename"
+    {
+        copyRange(input, argc, 0, 1);
+    }    
+    else
+    {
+        i = 0;
+        while(input[i] != SEPARATOR && input[i] != '\0') i++;
+
+        if (input[i] == SEPARATOR)
+        // Command in form "command path"
+        {
+            copyRange(input, argc, 0, i-1);
+            copy(input + i + 1, argv);
+        }
+        // Command in form "command" or "filename"
+        else
+        {
+            copy(input, argc);
+        }
+    }
+}
+
+void putArgs(char curDirIndex, char argc, char* argv)
+{
+    char args[SECTOR_SIZE];
+    int i;
+
+    clear(args, SECTOR_SIZE);
+    args[0] = curDirIndex;
+    args[1] = argc;
+
+    for (i = 0; i < ARGV_LENGTH; i++)
+    {
+        args[i+2] = argv[i];
+    }
+    interrupt(0x21, 0x03, args, ARGS_SECTOR, 0);
+}
+
+void getArgc(char* argc)
+{
+    char args[SECTOR_SIZE];
+
+    interrupt(0x21, 0x02, args, ARGS_SECTOR, SECTOR_SIZE);
+    *argc = args[1]; 
+}
+
+void getArgv(int index, char* argv)
+{
+    char args[SECTOR_SIZE];
+    int i, j, k;
+
+    interrupt(0x21, 0x02, args, ARGS_SECTOR, SECTOR_SIZE);
+
+    i = 0;
+    j = 0;
+    for (k = 2; k < SECTOR_SIZE && args[k] != '\0'; k++)
+    {
+        if (i == index)
+        {
+            argv[j] = args[k];
+            j++;
+
+            if (args[k+1] == ' ') break;
+        }
+        else if (args[k] == ' ')
+        {
+            i++;
+        }
+    } 
 }
