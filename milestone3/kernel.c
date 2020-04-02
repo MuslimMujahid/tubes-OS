@@ -1,29 +1,6 @@
-#define TRUE 1
-#define FALSE 0
-
-#define SECTOR_SIZE 512
-#define MAP_SECTOR 256
-#define FILES_SECTOR_1 257
-#define FILES_SECTOR_2 258
-#define SECTORS_SECTOR 259
-#define MAX_BYTE 256
-#define MAX_FILES 32
-#define FILE_SIZE 8192
-#define NAME_OFFSET 2
-#define SECTORS_COLUMNS 16
-#define FILES_COLUMNS 16
-#define MAX_FILENAME_LENGTH 14
-#define ROOT 0xFF
-#define USED 0xFF
-#define EMPTY 0x0
-#define DIR 0xFF
-
-// File exception
-#define FILE_NOT_FOUND -1
-#define FILE_EXIST -1
-#define FILES_FULL -2
-#define SECTORS_FULL -3
-#define FOLDER_UNVALID -4
+#include "macro.h"
+#include "library/mat/mat.h"
+#include "library/text/text.h"
 
 void handleInterrupt21 (int AX, int BX, int CX, int DX);
 void printString(char *string, int newline);
@@ -34,15 +11,11 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex);
 void readFile(char *buffer, char *path, int *result, char parentIndex);
 void executeProgram(char *path, int segment, int *success, char parentIndex);
 void clear(char *buffer, int length); 
-int mod(int a, int b);
-int div(int a, int b);
 void printChar(char c, int newline);
 void printLogo();
 int strCmp(char* str1, char* str2);
-int findFilenameInDir(char* path, char parentIndex);
 void fileExceptionHandler(int result);
 void printInt(int i, int newLine);
-int len(char* string);
 
 main()
 {
@@ -187,6 +160,108 @@ void writeSector(char *buffer, int sector)
       buffer, 
       div(sector, 36) * 0x100 + mod(sector, 18) + 1, 
       mod(div(sector, 18), 2) * 0x100);
+}
+
+void executeProgram(char *path, int segment, int *success, char parentIndex)
+{
+	char buffer[FILE_SIZE];
+	int i;
+	readFile(buffer, path, success, parentIndex);
+	if (*success)
+	{
+		for (i = 0; i < FILE_SIZE; i++)
+		{
+			putInMemory(segment, i, buffer[i]);
+		}
+		launchProgram(segment);
+	}
+}
+
+void clear(char *buffer, int length)
+{
+    int i = 0;
+    for (i = 0; i < length; i++)
+      buffer[i] = 0x0;
+}
+
+void printChar(char c, int newline)
+{
+    interrupt(0x10, 0xE00+c, 0, 0, 0);
+    if (newline) {
+		interrupt(0x10, 0xE00 + '\n', 0, 0, 0);
+		interrupt(0x10, 0xE00 + '\r', 0, 0, 0);
+	}
+}
+
+void printLogo()
+{
+    int success;
+    char buffer[FILE_SIZE];
+    readFile(buffer, "logo.txt", &success, ROOT);
+    fileExceptionHandler(success);
+    printString(buffer, FALSE);
+}
+
+int strCmp(char* str1 ,char* str2)
+{
+    int it = 0;
+    while(str1[it] != '\0' && str2[it] != '\0')
+    {
+        if (str1[it] != str2[it])
+            break;
+        it++;
+    }
+    return (str1[it] == str2[it]);
+}
+
+void fileExceptionHandler(int result)
+{
+    if (result == FILE_NOT_FOUND || result == FILE_EXIST)
+    {
+        printString("File not found/already exist", TRUE);
+    }
+    else if (result == FILES_FULL)
+    {
+        printString("No empty space in files", TRUE);
+    }
+    else if (result == SECTORS_FULL)
+    {
+        printString("No empty space in sectors", TRUE);
+    }
+}
+
+void printInt(int i, int newLine) 
+{
+    char integer[10];
+    int digit;
+    int j;
+
+    // Count digit
+    digit = 1;
+    j = i;
+    while (j > 10)
+    {
+        j = div(j, 10);
+        digit++;
+    }
+
+	integer[0] = '0';
+	integer[1] = '0';
+	integer[2] = '0';
+	integer[3] = '0';
+	integer[4] = '0';
+	integer[5] = '0';
+	integer[6] = '0';
+	integer[7] = '0';
+	integer[8] = '0';
+	integer[9] = '\0';
+	j = 8;
+	while (i != 0 && j >= 0) {
+		integer[j] = '0' + mod(i, 10);
+		i = div(i, 10);
+		j -= 1;
+	}
+	printString(integer + 9 - digit, newLine);
 }
 
 void writeFile(char *buffer, char *path, int *sector, char parentIndex)
@@ -334,167 +409,4 @@ void readFile(char *buffer, char *path, int *result, char parentIndex)
         readSector(buffer + i*SECTOR_SIZE, sectors[sectorIndex + i]);
     }
     *result = 1;
-}
-
-void executeProgram(char *path, int segment, int *success, char parentIndex)
-{
-	char buffer[FILE_SIZE];
-	int i;
-	readFile(buffer, path, success, parentIndex);
-	if (*success)
-	{
-		for (i = 0; i < FILE_SIZE; i++)
-		{
-			putInMemory(segment, i, buffer[i]);
-		}
-		launchProgram(segment);
-	}
-}
-
-void clear(char *buffer, int length)
-{
-    int i = 0;
-    for (i = 0; i < length; i++)
-      buffer[i] = 0x0;
-}
-
-int mod(int a, int b)
-{
-    while(a >= b)
-        a = a - b;
-    return a;
-}
-int div(int a, int b)
-{
-    int q = 0;
-    while(q*b <= a)
-        q = q+1;
-    return q-1;
-}
-
-void printChar(char c, int newline)
-{
-    interrupt(0x10, 0xE00+c, 0, 0, 0);
-    if (newline) {
-		interrupt(0x10, 0xE00 + '\n', 0, 0, 0);
-		interrupt(0x10, 0xE00 + '\r', 0, 0, 0);
-	}
-}
-
-void printLogo()
-{
-    int success;
-    char buffer[FILE_SIZE];
-    readFile(buffer, "logo.txt", &success, ROOT);
-    fileExceptionHandler(success);
-    printString(buffer, FALSE);
-}
-
-int strCmp(char* str1 ,char* str2)
-{
-    int it = 0;
-    while(str1[it] != '\0' && str2[it] != '\0')
-    {
-        if (str1[it] != str2[it])
-            break;
-        it++;
-    }
-    return (str1[it] == str2[it]);
-}
-
-int findFilenameInDir(char* path, char parentIndex)
-{
-    int i, j;
-    int filenameIndex;
-    int filefound;
-
-    // Load files
-    char files[SECTOR_SIZE * 2];
-    readSector(files, FILES_SECTOR_1);
-    readSector(files + SECTOR_SIZE, FILES_SECTOR_2);
-
-    // Find filename in path
-    i = 0;
-    while (path[i] != '\0' && i < MAX_FILENAME_LENGTH) i++;
-    while (path[i] != '/' && i > 0) i--;
-    if (path[i] == '/') path += i + 1; 
-
-    // Find filename in parentIndex
-    filefound = 0;
-    for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
-    {
-        if (files[i] == parentIndex && files[i + 1] != DIR) // Check only files, not directory
-        {
-            filefound = 1;
-            j = 0;
-            while (path[j] != '\0')
-            {
-                if (path[j] != files[i + NAME_OFFSET + j])
-                {
-                    filefound = 0;
-                    break;
-                }
-                j++;
-            }
-            if (filefound) return i;
-        }
-    }
-    return FILE_NOT_FOUND;
-}
-
-void fileExceptionHandler(int result)
-{
-    if (result == FILE_NOT_FOUND || result == FILE_EXIST)
-    {
-        printString("File not found/already exist", TRUE);
-    }
-    else if (result == FILES_FULL)
-    {
-        printString("No empty space in files", TRUE);
-    }
-    else if (result == SECTORS_FULL)
-    {
-        printString("No empty space in sectors", TRUE);
-    }
-}
-
-void printInt(int i, int newLine) 
-{
-    char integer[10];
-    int digit;
-    int j;
-
-    // Count digit
-    digit = 1;
-    j = i;
-    while (j > 10)
-    {
-        j = div(j, 10);
-        digit++;
-    }
-
-	integer[0] = '0';
-	integer[1] = '0';
-	integer[2] = '0';
-	integer[3] = '0';
-	integer[4] = '0';
-	integer[5] = '0';
-	integer[6] = '0';
-	integer[7] = '0';
-	integer[8] = '0';
-	integer[9] = '\0';
-	j = 8;
-	while (i != 0 && j >= 0) {
-		integer[j] = '0' + mod(i, 10);
-		i = div(i, 10);
-		j -= 1;
-	}
-	printString(integer + 9 - digit, newLine);
-}
-
-int len(char* string)
-{
-    int i = 0;
-    while (string[i] != '\0') i++;
-    return i;
 }

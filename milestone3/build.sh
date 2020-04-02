@@ -5,17 +5,21 @@ dd if=map.img of=system.img bs=512 count=1 seek=256 conv=notrunc
 dd if=files.img of=system.img bs=512 count=2 seek=257 conv=notrunc
 dd if=sectors.img of=system.img bs=512 count=1 seek=259 conv=notrunc  
 
-echo Compile kernel
+echo Compile kernel, mat, text, folderIO
 bcc -ansi -c -o kernel.o kernel.c
+bcc -ansi -c -o mat.o library/mat/mat.c
+bcc -ansi -c -o text.o library/text/text.c
+bcc -ansi -c -o folderIO.o library/folderIO/folderIO.c
+bcc -ansi -c -o fileIO.o library/fileIO/fileIO.c
 nasm -f as86 kernel.asm -o kernel_asm.o
-ld86 -o kernel -d kernel.o kernel_asm.o
+ld86 -o kernel -d kernel.o kernel_asm.o mat.o text.o folderIO.o
 dd if=kernel of=system.img bs=512 conv=notrunc seek=3
 echo Compile kernel selesai
 
 echo Compile shell
 bcc -ansi -c -o shell.o shell.c
 nasm -f as86 lib.asm -o lib_asm.o
-ld86 -o shell -d shell.o lib_asm.o
+ld86 -o shell -d shell.o lib_asm.o mat.o text.o fileIO.o
 echo Compile shell selesai
 
 echo Compile ls
@@ -31,5 +35,4 @@ echo Compile loadFile selesai
 echo load files
 echo load shell
 ./loadFile shell
-./loadFile ls
 echo load file selasai
