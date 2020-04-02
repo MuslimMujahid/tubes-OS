@@ -66,3 +66,84 @@ int len(char* string)
     while (string[i] != '\0') i++;
     return i;
 }
+
+void clear(char *buffer, int length)
+{
+    int i = 0;
+    for (i = 0; i < length; i++)
+      buffer[i] = 0x0;
+}
+
+void copy(char* src, char* dest)
+{
+    int i = 0;
+    while (src[i] != '\0')
+    {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0'; 
+}
+
+void copyRange(char* src, char* dest, int l, int h)
+{
+    int i, j; 
+
+    i = 0;
+    while (src[l + i] != '\0' && i <= h-l)
+    {
+        dest[i] = src[l+i];
+        i++;
+    }
+    dest[l+i] = '\0'; 
+}
+
+int strCmp(char* str1, char* str2)
+{
+    int i;
+    int length = len(str1);
+
+    if (length != len(str2)){
+        return FALSE;
+    }
+    else
+    {
+        for (i = 0; i < length; i++)
+        {
+            if (str1[i] != str2[i]){
+                break;
+            }
+        }
+    }
+    return (str1[i] == str2[i]);
+}
+
+int strSubset(char* str1, char* str2)
+{
+    int i;
+    int length;;
+
+    length = len(str1);
+    for (i = 0; i < length; i++)
+    {
+        if (str1[i] != str2[i])
+        {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+void concat(char* src, char* dest)
+{
+    int i, j;
+
+    i = 0;
+    j = 0;
+    while (src[i] != '\0') i++;
+    while (dest[j] != '\0')
+    {
+        src[i + j] = dest[j];
+        j++;
+    }
+}

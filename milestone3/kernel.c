@@ -1,6 +1,7 @@
 #include "macro.h"
 #include "library/mat/mat.h"
 #include "library/text/text.h"
+#include "library/fileIO/fileIO.h"
 
 void handleInterrupt21 (int AX, int BX, int CX, int DX);
 void printString(char *string, int newline);
@@ -10,10 +11,8 @@ void readSector(char *buffer, int sector);
 void writeFile(char *buffer, char *path, int *sectors, char parentIndex);
 void readFile(char *buffer, char *path, int *result, char parentIndex);
 void executeProgram(char *path, int segment, int *success, char parentIndex);
-void clear(char *buffer, int length); 
 void printChar(char c, int newline);
 void printLogo();
-int strCmp(char* str1, char* str2);
 void fileExceptionHandler(int result);
 void printInt(int i, int newLine);
 
@@ -177,13 +176,6 @@ void executeProgram(char *path, int segment, int *success, char parentIndex)
 	}
 }
 
-void clear(char *buffer, int length)
-{
-    int i = 0;
-    for (i = 0; i < length; i++)
-      buffer[i] = 0x0;
-}
-
 void printChar(char c, int newline)
 {
     interrupt(0x10, 0xE00+c, 0, 0, 0);
@@ -200,18 +192,6 @@ void printLogo()
     readFile(buffer, "logo.txt", &success, ROOT);
     fileExceptionHandler(success);
     printString(buffer, FALSE);
-}
-
-int strCmp(char* str1 ,char* str2)
-{
-    int it = 0;
-    while(str1[it] != '\0' && str2[it] != '\0')
-    {
-        if (str1[it] != str2[it])
-            break;
-        it++;
-    }
-    return (str1[it] == str2[it]);
 }
 
 void fileExceptionHandler(int result)

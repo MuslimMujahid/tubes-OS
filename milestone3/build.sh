@@ -19,7 +19,7 @@ echo Compile kernel selesai
 echo Compile shell
 bcc -ansi -c -o shell.o shell.c
 nasm -f as86 lib.asm -o lib_asm.o
-ld86 -o shell -d shell.o lib_asm.o mat.o text.o fileIO.o
+ld86 -o shell -d shell.o lib_asm.o mat.o text.o fileIO.o folderIO.o
 echo Compile shell selesai
 
 echo Compile ls
