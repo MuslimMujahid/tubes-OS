@@ -13,7 +13,6 @@ void splitArgs(char* input, char* argc, char* argv);
 
 // command methods
 void _ls_(char curDirIndex);
-void _mkdir_(char* dirname, char parentIndex);
 void _cd_(char* dirname, char* curDirIndex, char* curPath);
 void _run_(char* filename, char curDirIndex);
 void _bin_(char* filename);
@@ -155,8 +154,7 @@ void commandHandler(int type, char* argc, char* argv, char* curDirIndex, char* c
             _ls_(*curDirIndex);
             break;
         case mkdir:
-            interrupt(0x21, 0xFF << 8 | 0x6, "mkdir", 0x3000, 0);
-            // _mkdir_(argv, *curDirIndex);
+            _mkdir_();
             break;
         case run:
             _run_(argv, *curDirIndex);
@@ -300,34 +298,6 @@ void _ls_(char curDirIndex)
             pC(' ', TRUE);
         }
     }
-    // pC(' ', TRUE);
-
-    // pC(' ', FALSE);
-    // pS(" DIR: ", FALSE);
-    // for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
-    // {
-    //     if (files[i + 1] == DIR && files[i] == curDirIndex)
-    //     {
-    //         j = 0;
-    //         while (files[i + NAME_OFFSET + j] != '\0' && j < 14)
-    //         {
-    //             pC(files[i + NAME_OFFSET + j], FALSE);
-    //             j++;
-    //         }
-    //         pC(' ', FALSE);
-    //     }
-    // }
-    // pC(' ', TRUE);
-}
-
-void _mkdir_(char* dirname, char parentIndex)
-{
-    if (isDirExist(dirname, parentIndex))
-    {
-        pS(" There is already directory with that name!", TRUE);
-        return;
-    }
-    interrupt(0x21, (parentIndex << 8) | 0x5, 0, dirname, 0);
 }
 
 void _cd_(char* dirname, char* curDirIndex, char* curPath)
