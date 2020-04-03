@@ -1,5 +1,15 @@
 #include "folderIO.h"
 
+void createrDir(char* dirname, char parentIndex)
+{
+    interrupt(0x21, (parentIndex << 8) | 0x5, 0, dirname, 0);
+}
+
+void deleteDir(char* dirname, char parentIndex)
+{
+    interrupt(0x21, (parentIndex << 8) | 0x5, 0, dirname, 0);
+}
+
 void getListContent(char* listContent, char parentIndex)
 {
     int i, j, k;
@@ -30,14 +40,4 @@ void getListContent(char* listContent, char parentIndex)
         }
         k++;
     }
-}
-
-void createrDir(char* dirname, char parentIndex)
-{
-    interrupt(0x21, (parentIndex << 8) | 0x5, 0, dirname, 0);
-}
-
-void deleteDir(char* dirname, char parentIndex)
-{
-    interrupt(0x21, (parentIndex << 8) | 0x5, 0, dirname, 0);
 }

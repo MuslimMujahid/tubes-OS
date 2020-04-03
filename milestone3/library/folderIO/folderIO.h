@@ -3,9 +3,8 @@
 
 #include "../../macro.h"
 
-int isDirExist(char* dirname, char curDirIndex);
-char getDirIndexByName(char* dirname, char curDirIndex);
-char getParentIndexByCurIndex(char curDirIndex);
-int findFilenameInDir(char* path, char parentIndex);
+void createrDir(char* dirname, char parentIndex);
+void deleteDir(char* dirname, char parentIndex);
+void getListContent(char* listContent, char parentIndex);
 
 #endif

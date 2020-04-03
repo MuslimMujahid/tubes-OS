@@ -1,4 +1,4 @@
-#include "folderIO_extra.h"
+#include "folderIO2.h"
 
 int isDirExist(char* dirname, char curDirIndex)
 {
@@ -105,3 +105,4 @@ int findFilenameInDir(char* path, char parentIndex)
     }
     return FILE_NOT_FOUND;
 }
+

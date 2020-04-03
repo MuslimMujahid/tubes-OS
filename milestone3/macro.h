@@ -48,5 +48,6 @@
 #define run 4
 #define bin 5
 #define cat 6 
+#define cp 7
 
 #endif

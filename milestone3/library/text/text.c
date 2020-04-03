@@ -194,6 +194,27 @@ int strCmp(char* str1, char* str2)
     return (str1[i] == str2[i]);
 }
 
+int strCmpMax(char* str1, char* str2, int max)
+{
+    int i;
+    int length = len(str1);
+
+    if (length != len(str2)){
+        return FALSE;
+    }
+    else
+    {
+        for (i = 0; i < length && i < max; i++)
+        {
+            if (str1[i] != str2[i]){
+                break;
+            }
+        }
+    }
+    if (i == max) i--;
+    return (str1[i] == str2[i]);
+}
+
 int strSubset(char* str1, char* str2)
 {
     int i;
