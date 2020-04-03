@@ -1,6 +1,64 @@
 #include "text.h"
 #include "../mat/mat.h"
 
+// void Input(char* string, char* ret)
+// {
+//     int count = len(string);
+//     char input;
+//     while(1)
+//     {
+//         /* Call interrupt 0x16 */
+//         /* interrupt #, AX, BX, CX, DX */
+//         input = interrupt(0x16,0,0,0,0);
+//         if (input == '\r')
+//         {              
+//             *ret = '\r';
+//             string[count] = 0x0;
+//             interrupt(0x10, 0xe*256+'\n', 0, 0, 0);
+//             interrupt(0x10, 0xe*256+'\r', 0, 0, 0);
+//             return;
+//         }
+//         else if (input == '\b')
+//         {
+//             if (count > 0)
+//             {
+//                 string[count] = 0x0;
+//                 count--;
+//                 interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
+//                 count++;
+//                 interrupt(0x10, 0xe*256+0x0, 0, 0 ,0);
+//                 count--;
+//                 string[count] = 0x0;
+//                 interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
+//             }
+//         }
+//         else if (input == '\x20') // space
+//         {
+//             string[count] = ' ';
+//             interrupt(0x10, 0xe*256+input, 0, 0, 0);
+//             count++;
+//         }
+//         else if (input == '\t')
+//         {
+//             *ret = '\t';
+//             return;
+//         }
+//         else if (input == 0) // arrow up and down
+//         {
+//             *ret = '\f';
+//             string[count] = input;
+//             string[count+1] = 0x0;
+//             return;
+//         }
+//         else
+//         {
+//             string[count] = input;
+//             interrupt(0x10, 0xe*256+input, 0, 0, 0);
+//             count++;
+//         }     
+//     }
+// }
+
 void pS(char* string, int newline)
 {   
     char ch;
@@ -67,6 +125,13 @@ int len(char* string)
     return i;
 }
 
+int lenMax(char* string, int max)
+{
+    int i = 0;
+    while (string[i] != '\0' && i < max) i++;
+    return i;
+}
+
 void clear(char *buffer, int length)
 {
     int i = 0;
@@ -78,6 +143,17 @@ void copy(char* src, char* dest)
 {
     int i = 0;
     while (src[i] != '\0')
+    {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0'; 
+}
+
+void copyMax(char* src, char* dest, int max)
+{
+    int i = 0;
+    while (src[i] != '\0' && i < max)
     {
         dest[i] = src[i];
         i++;

@@ -1,6 +1,4 @@
 #include "macro.h"
-#include "library/text/text.h"
-#include "library/fileIO/fileIO.h"
 
 void getCommandType(char* argc, char* type);
 void commandHandler(int type, char* argc, char* argv, char* curDirIndex, char* curPath);

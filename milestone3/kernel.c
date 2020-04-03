@@ -1,7 +1,4 @@
 #include "macro.h"
-#include "library/mat/mat.h"
-#include "library/text/text.h"
-#include "library/fileIO/fileIO.h"
 
 void handleInterrupt21 (int AX, int BX, int CX, int DX);
 void printString(char *string, int newline);
