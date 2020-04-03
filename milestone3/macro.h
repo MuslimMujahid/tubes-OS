@@ -47,5 +47,6 @@
 #define mkdir 3
 #define run 4
 #define bin 5
+#define cat 6 
 
 #endif

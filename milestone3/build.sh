@@ -32,4 +32,6 @@ echo Compile loadFile selesai
 echo load files
 echo load shell
 ./loadFile shell
+echo load test.txt
+./loadFile test.txt
 echo load file selasai

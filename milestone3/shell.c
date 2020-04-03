@@ -138,6 +138,7 @@ void getCommandType(char* argc, char* type)
     if (strCmp(argc, "cd")) *type = cd;
     else if (strCmp(argc, "ls")) *type = ls;
     else if (strCmp(argc, "mkdir")) *type = mkdir;
+    else if (strCmp(argc, "cat")) *type = cat;
     else if (strCmp(argc, "./")) *type = run;
     else *type = bin;
 }
@@ -161,6 +162,8 @@ void commandHandler(int type, char* argc, char* argv, char* curDirIndex, char* c
             break;
         case bin:
             _bin_(argc);
+        case cat:
+            _cat_();
         default:
             break;
     }

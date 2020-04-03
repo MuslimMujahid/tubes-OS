@@ -3,6 +3,7 @@
 
 #include "../macro.h"
 
+void _cat_();
 void _mkdir_();
 
 #endif
