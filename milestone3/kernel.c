@@ -16,56 +16,55 @@ void printInt(int i, int newLine);
 main()
 {
     char buffer[FILE_SIZE];
-	int suc = 0;
-	makeInterrupt21();
-	// printLogo();
-	interrupt(0x21, 0xFF << 8 | 0x6, "shell", 0x2000, 0);
-	while (1)
-    {
+	  int suc = 0;
+	  makeInterrupt21();
+	  // printLogo();
+	  interrupt(0x21, 0xFF << 8 | 0x6, "shell", 0x2000, 0);
+	  while (1)
+      {
 
-    }
-} 
-
-void handleInterrupt21 (int AX, int BX, int CX, int DX) {
-   char AL, AH;
-   AL = (char) (AX);
-   AH = (char) (AX >> 8);
-   switch (AL) {
-      case 0x00:
-         printString(BX, CX);
-         break;
-      case 0x01:
-         readString(BX, CX);
-         break;
-      case 0x02:
-         readSector(BX, CX);
-         break;
-      case 0x03:
-         writeSector(BX, CX);
-         break;
-      case 0x04:
-         readFile(BX, CX, DX, AH);
-         break;
-      case 0x05:
-         writeFile(BX, CX, DX, AH);
-         break;
-      case 0x06:
-         executeProgram(BX, CX, DX, AH);
-         break;
-      case 0x07:
-         printInt(BX, CX);
-         break;
-      case 0x08:
-         printChar(BX, CX);
-         break;
-      default:
-         printString("Invalid interrupt", TRUE);
-   }
+      }
 }
 
+void handleInterrupt21 (int AX, int BX, int CX, int DX) {
+    char AL, AH;
+    AL = (char) (AX);
+    AH = (char) (AX >> 8);
+    switch (AL) {
+        case 0x00:
+            printString(BX, CX);
+            break;
+        case 0x01:
+            readString(BX, CX);
+            break;
+        case 0x02:
+            readSector(BX, CX);
+            break;
+        case 0x03:
+            writeSector(BX, CX);
+            break;
+        case 0x04:
+            readFile(BX, CX, DX, AH);
+            break;
+        case 0x05:
+            writeFile(BX, CX, DX, AH);
+            break;
+        case 0x06:
+            executeProgram(BX, CX, DX, AH);
+            break;
+        case 0x07:
+            printInt(BX, CX);
+            break;
+        case 0x08:
+            printChar(BX, CX);
+            break;
+        default:
+            printString("Invalid interrupt", TRUE);
+    }
+}
 
 void printString(char* string, int newline)
-{   
+{
     char ch;
     int i = 0;
     while(string[i] != '\0')
@@ -76,8 +75,8 @@ void printString(char* string, int newline)
         i++;
     }
     if (newline) {
-		printChar('\r', TRUE);
-	}
+		    printChar('\r', TRUE);
+	  }
 }
 
 void readString(char* string, char* ret)
@@ -90,7 +89,7 @@ void readString(char* string, char* ret)
         /* interrupt #, AX, BX, CX, DX */
         input = interrupt(0x16,0,0,0,0);
         if (input == '\r')
-        {              
+        {
             *ret = '\r';
             string[count] = 0x0;
             interrupt(0x10, 0xe*256+'\n', 0, 0, 0);
@@ -134,52 +133,52 @@ void readString(char* string, char* ret)
             string[count] = input;
             interrupt(0x10, 0xe*256+input, 0, 0, 0);
             count++;
-        }     
+        }
     }
 }
 
 void readSector(char *buffer, int sector)
 {
     interrupt(
-      0x13, 
-      0x201, 
-      buffer, 
-      div(sector, 36) * 0x100 + mod(sector, 18) + 1, 
+      0x13,
+      0x201,
+      buffer,
+      div(sector, 36) * 0x100 + mod(sector, 18) + 1,
       mod(div(sector, 18), 2) * 0x100);
 }
 
 void writeSector(char *buffer, int sector)
 {
     interrupt(
-      0x13, 
-      0x301, 
-      buffer, 
-      div(sector, 36) * 0x100 + mod(sector, 18) + 1, 
+      0x13,
+      0x301,
+      buffer,
+      div(sector, 36) * 0x100 + mod(sector, 18) + 1,
       mod(div(sector, 18), 2) * 0x100);
 }
 
 void executeProgram(char *path, int segment, int *success, char parentIndex)
 {
-	char buffer[FILE_SIZE];
-	int i;
-	readFile(buffer, path, success, parentIndex);
-	if (*success)
-	{
-		for (i = 0; i < FILE_SIZE; i++)
-		{
-			putInMemory(segment, i, buffer[i]);
-		}
-		launchProgram(segment);
-	}
+	  char buffer[FILE_SIZE];
+	  int i;
+	  readFile(buffer, path, success, parentIndex);
+	  if (*success)
+	  {
+		    for (i = 0; i < FILE_SIZE; i++)
+		    {
+			      putInMemory(segment, i, buffer[i]);
+		    }
+		    launchProgram(segment);
+	  }
 }
 
 void printChar(char c, int newline)
 {
     interrupt(0x10, 0xE00+c, 0, 0, 0);
     if (newline) {
-		interrupt(0x10, 0xE00 + '\n', 0, 0, 0);
-		interrupt(0x10, 0xE00 + '\r', 0, 0, 0);
-	}
+		    interrupt(0x10, 0xE00 + '\n', 0, 0, 0);
+		    interrupt(0x10, 0xE00 + '\r', 0, 0, 0);
+	  }
 }
 
 void printLogo()
@@ -207,7 +206,7 @@ void fileExceptionHandler(int result)
     }
 }
 
-void printInt(int i, int newLine) 
+void printInt(int i, int newLine)
 {
     char integer[10];
     int digit;
@@ -222,23 +221,23 @@ void printInt(int i, int newLine)
         digit++;
     }
 
-	integer[0] = '0';
-	integer[1] = '0';
-	integer[2] = '0';
-	integer[3] = '0';
-	integer[4] = '0';
-	integer[5] = '0';
-	integer[6] = '0';
-	integer[7] = '0';
-	integer[8] = '0';
-	integer[9] = '\0';
-	j = 8;
-	while (i != 0 && j >= 0) {
-		integer[j] = '0' + mod(i, 10);
-		i = div(i, 10);
-		j -= 1;
-	}
-	printString(integer + 9 - digit, newLine);
+	  integer[0] = '0';
+	  integer[1] = '0';
+	  integer[2] = '0';
+	  integer[3] = '0';
+	  integer[4] = '0';
+	  integer[5] = '0';
+	  integer[6] = '0';
+	  integer[7] = '0';
+	  integer[8] = '0';
+	  integer[9] = '\0';
+	  j = 8;
+	  while (i != 0 && j >= 0) {
+		    integer[j] = '0' + mod(i, 10);
+		    i = div(i, 10);
+		    j -= 1;
+	  }
+	  printString(integer + 9 - digit, newLine);
 }
 
 void writeFile(char *buffer, char *path, int *sector, char parentIndex)
@@ -312,7 +311,7 @@ void writeFile(char *buffer, char *path, int *sector, char parentIndex)
     {
         files[fileIndex + 1] = sectorindex >> 0x4;
     }
-    
+
 
     // Clear memory that will be used to store filename
     clear(files + fileIndex + NAME_OFFSET, MAX_FILENAME_LENGTH);
@@ -325,7 +324,7 @@ void writeFile(char *buffer, char *path, int *sector, char parentIndex)
     while (path[i] != '\0' && j < MAX_FILENAME_LENGTH)
         files[fileIndex + NAME_OFFSET + j++] = path[i++];
 
-    // Store file 
+    // Store file
     for (sectorId = 0, sectorCount = 0; sectorId < MAX_BYTE && sectorCount < *sector; sectorId++)
     {
         if (map[sectorId] == EMPTY)
@@ -335,7 +334,7 @@ void writeFile(char *buffer, char *path, int *sector, char parentIndex)
 
             // Put sectorId to sectors correspondent to files
             sectors[sectorindex + sectorCount] = sectorId;
-        
+
             // clear temp buffer
             clear(tmp_buff, SECTOR_SIZE);
 
@@ -363,7 +362,7 @@ void readFile(char *buffer, char *path, int *result, char parentIndex)
     int i;
     char map[SECTOR_SIZE], files[SECTOR_SIZE * 2], sectors[SECTOR_SIZE];
     int fileIndex;
-    int sectorIndex;    
+    int sectorIndex;
 
     // Read sector map, files, and sectors
     readSector(map, MAP_SECTOR);
