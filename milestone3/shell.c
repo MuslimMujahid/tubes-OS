@@ -9,9 +9,7 @@ void autoCompletePath(char* input, char curDirIndex);
 void autoCompleteDirInDir(char* input, char* dirname, char curDirIndex);
 
 void splitArgs(char* input, char* argc, char* argv);
-void putArgs(char curDirIndex, char argc, char* argv);
-void getArgc(char* argc);   
-void getArgv(int index, char* argv);
+
 
 // command methods
 void _ls_(char curDirIndex);
@@ -147,7 +145,6 @@ void getCommandType(char* argc, char* type)
 
 void commandHandler(int type, char* argc, char* argv, char* curDirIndex, char* curPath)
 {
-    int test;
     switch (type)
     {
         case cd:
@@ -158,7 +155,8 @@ void commandHandler(int type, char* argc, char* argv, char* curDirIndex, char* c
             _ls_(*curDirIndex);
             break;
         case mkdir:
-            _mkdir_(argv, *curDirIndex);
+            interrupt(0x21, 0xFF << 8 | 0x6, "mkdir", 0x3000, 0);
+            // _mkdir_(argv, *curDirIndex);
             break;
         case run:
             _run_(argv, *curDirIndex);
@@ -432,61 +430,4 @@ void splitArgs(char* input, char* argc, char* argv)
             copy(input, argc);
         }
     }
-}
-
-void putArgs(char curDirIndex, char argc, char* argv)
-{
-    char args[SECTOR_SIZE];
-    int i;
-
-    clear(args, SECTOR_SIZE);
-    args[0] = curDirIndex;
-    args[1] = argc;
-
-    for (i = 0; i < ARGV_LENGTH; i++)
-    {
-        args[i+2] = argv[i];
-    }
-    interrupt(0x21, 0x03, args, ARGS_SECTOR, 0);
-}
-
-void getArgc(char* argc)
-{
-    char args[SECTOR_SIZE];
-
-    interrupt(0x21, 0x02, args, ARGS_SECTOR, SECTOR_SIZE);
-    *argc = args[1]; 
-}
-
-void getArgv(int index, char* argv)
-{
-    char args[SECTOR_SIZE];
-    int i, j, k;
-
-    interrupt(0x21, 0x02, args, ARGS_SECTOR, SECTOR_SIZE);
-
-    i = 0;
-    j = 0;
-    for (k = 2; k < SECTOR_SIZE && args[k] != '\0'; k++)
-    {
-        if (i == index)
-        {
-            argv[j] = args[k];
-            j++;
-
-            if (args[k+1] == ' ') break;
-        }
-        else if (args[k] == ' ')
-        {
-            i++;
-        }
-    } 
-}
-
-void getCurDir(char* curdir)
-{
-    char args[SECTOR_SIZE];
-
-    interrupt(0x21, 0x02, args, ARGS_SECTOR, SECTOR_SIZE);
-    *curdir = args[0]; 
 }
