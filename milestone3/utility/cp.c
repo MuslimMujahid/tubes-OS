@@ -15,6 +15,8 @@ main()
     getArgv(0, &oriPath);
     getArgv(1, &destPath);
 
+    pI(parentIndex, TRUE);
+
     getCurDir(&parentIndex);
     index = pathFindIndex(oriPath, parentIndex, TRUE, TRUE);
     parentIndex = getParentIndexByCurIndex(index);

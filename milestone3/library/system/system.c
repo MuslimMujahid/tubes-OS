@@ -1,10 +1,5 @@
 #include "system.h"
 
-void terminate()
-{
-    interrupt(0x21, 0xFF << 8 | 0x6, "shell", 0x2000, 0);
-}
-
 void putArgs(char curDirIndex, char argc, char* argv)
 {
     char args[SECTOR_SIZE];
@@ -60,4 +55,20 @@ void getCurDir(char* curdir)
 
     interrupt(0x21, 0x02, args, ARGS_SECTOR, SECTOR_SIZE);
     *curdir = args[0]; 
+}
+
+void clearArgs()
+{
+    char args[SECTOR_SIZE];
+
+    clear(args, SECTOR_SIZE);
+    interrupt(0x21, 0x02, args, ARGS_SECTOR, 0);
+    clear(args + 1, SECTOR_SIZE-1);
+    interrupt(0x21, 0x03, args, ARGS_SECTOR, 0);
+}
+
+void terminate()
+{
+    clearArgs();
+    interrupt(0x21, 0xFF << 8 | 0x6, "shell", 0x2000, 0);
 }
