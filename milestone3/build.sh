@@ -4,6 +4,7 @@ dd if=bootloader of=system.img bs=512 count=1 conv=notrunc
 dd if=map.img of=system.img bs=512 count=1 seek=256 conv=notrunc
 dd if=files.img of=system.img bs=512 count=2 seek=257 conv=notrunc
 dd if=sectors.img of=system.img bs=512 count=1 seek=259 conv=notrunc  
+dd if=args.img of=system.img bs=512 count=1 seek=512 conv=notrunc  
 
 echo Compile kernel, mat, text, folderIO
 bcc -ansi -c -o kernel.o kernel.c
