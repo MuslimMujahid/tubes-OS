@@ -4,7 +4,6 @@ main()
 {
     char parentIndex;
     char dirname[MAX_FILENAME_LENGTH];
-    char option[2];
     clear(dirname, MAX_FILENAME_LENGTH);
 
     getCurDir(&parentIndex);

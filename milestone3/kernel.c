@@ -58,9 +58,6 @@ void handleInterrupt21 (int AX, int BX, int CX, int DX) {
         case 0x08:
             printChar(BX, CX);
             break;
-        case 0x09:
-            deleteFile(BX, CX, DX, AH);
-            break;
         default:
             printString("Invalid interrupt", TRUE);
     }
@@ -389,31 +386,5 @@ void readFile(char *buffer, char *path, int *result, char parentIndex)
     {
         readSector(buffer + i*SECTOR_SIZE, sectors[sectorIndex + i]);
     }
-    *result = 1;
-}
-void deleteFile(char *buffer, char *path, int *result, char parentIndex)
-{
-    int i;
-    char map[SECTOR_SIZE], files[SECTOR_SIZE * 2], sectors[SECTOR_SIZE];
-    int fileIndex;
-    int sectorIndex;
-
-    // Read sector map, files, and sectors
-    readSector(map, MAP_SECTOR);
-    readSector(files, FILES_SECTOR_1);
-    readSector(files + SECTOR_SIZE, FILES_SECTOR_2);
-    readSector(sectors, SECTORS_SECTOR);
-
-    // Find filename in parentIndex
-    fileIndex = findFilenameInDir(path, parentIndex);
-    if (fileIndex == FILE_NOT_FOUND) // file not found
-    {
-        *result = FILE_NOT_FOUND;
-        return;
-    }
-
-    // Load file to buffer
-    sectorIndex = files[fileIndex + 1] * SECTORS_COLUMNS;
-     clear(sectors,SECTOR_SIZE);
     *result = 1;
 }
