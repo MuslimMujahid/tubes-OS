@@ -3,10 +3,11 @@
 
 #include "../../macro.h"
 
-void terminate();
 void putArgs(char curDirIndex, char argc, char* argv);
 void getArgc(char* argc);   
 void getArgv(int index, char* argv);
 void getCurDir(char* curdir);
+void clearArgs();
+void terminate();
 
 #endif

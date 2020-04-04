@@ -371,6 +371,7 @@ void _cd_(char* dirname, char* curDirIndex, char* curPath)
         i++;
     }
     *curDirIndex = tmpDirIndex; 
+    clearArgs();
     putArgs(*curDirIndex, 0, 0);
 }
 

@@ -33,10 +33,8 @@ main()
     }
     else if (isDirExist(oriPath + i, parentIndex))
     {
-        pS("Masuk 2", TRUE);
         
         writeFile(0, destPath, 0, parentIndex);
-
         deleteDir(oriPath + i, parentIndex);
     }
     else
