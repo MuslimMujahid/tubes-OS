@@ -1,0 +1,48 @@
+#include "../macro.h"
+
+main()
+{
+    int i;
+    char buffer[FILE_SIZE];
+    char oriPath[128];
+    char destPath[128];
+    char parentIndex, newParentIndex, index;
+
+    /* Get arguments and current directory */
+    getCurDir(&parentIndex);
+    getArgv(0, &oriPath);
+    getArgv(1, &destPath);
+
+    /* find file/directory name in path */
+    i = len(oriPath)-1;
+    while (oriPath[i] != '/' && i > 0) i--;
+    if (oriPath[i] == '/') i++;
+    
+    /* find index and parent index of file/directory */
+    index = findIndex(oriPath + i, parentIndex);
+    newParentIndex = findIndex(destPath, parentIndex, TRUE, FALSE);
+    parentIndex = getParentIndexByCurIndex(index);
+
+    /* Add filename to destPath */
+    destPath[len(destPath)] = '/';
+    concat(destPath, oriPath + i);
+
+    if (isFileExist(oriPath + i, parentIndex))
+    {
+        moveFile(oriPath + i, parentIndex, newParentIndex);
+    }
+    else if (isDirExist(oriPath + i, parentIndex))
+    {
+        pS("Masuk 2", TRUE);
+        
+        writeFile(0, destPath, 0, parentIndex);
+
+        deleteDir(oriPath + i, parentIndex);
+    }
+    else
+    {
+        pS("There is no such file or directory.", TRUE);
+    }
+
+    terminate();
+}

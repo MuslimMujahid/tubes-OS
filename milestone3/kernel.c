@@ -259,8 +259,6 @@ void writeFile(char *buffer, char *path, int *sector, char parentIndex)
     readSector(files + SECTOR_SIZE, FILES_SECTOR_2);
     readSector(sectors, SECTORS_SECTOR);
 
-    printString("Masuk", TRUE);
-
     // Find file in parentIndex
     fileIndex = findFilenameInDir(path, parentIndex);
     if (fileIndex != FILE_NOT_FOUND) // file already exist

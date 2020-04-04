@@ -10,13 +10,12 @@ int findIndex(char* name, char parentIndex, int isDir, int isFile)
     interrupt(0x21, 0x02, files + SECTOR_SIZE, FILES_SECTOR_2);
     for (i = 0; i < SECTOR_SIZE*2; i += FILES_COLUMNS)
     {
-        if (files[i] == parentIndex)
+        if (files[i + NAME_OFFSET] != EMPTY && files[i] == parentIndex)
         {
-            if (isDir && files[i+1] == DIR || isFile && files[i+1] != DIR)
+            if ((isDir && files[i+1] == DIR) || (isFile && files[i+1] != DIR))
             {
                 if (strCmpMax(name, files + i + NAME_OFFSET, MAX_FILENAME_LENGTH))
                 {
-                    pS("yes match!", TRUE);
                     return (i >> 0x4);
                 }
             }
@@ -29,7 +28,6 @@ int pathFindIndex(char* path, char parentIndex, int isDir, int isFile)
 {
     int i, j;
     char name[MAX_FILENAME_LENGTH];
-
     i = 0;
     j = 0;
     while (path[i] != '\0')

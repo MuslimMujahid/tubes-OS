@@ -140,6 +140,8 @@ void getCommandType(char* argc, char* type)
     else if (strCmp(argc, "mkdir")) *type = mkdir;
     else if (strCmp(argc, "cat")) *type = cat;
     else if (strCmp(argc, "cp")) *type = cp;
+    else if (strCmp(argc, "rm")) *type = rm;
+    else if (strCmp(argc, "mv")) *type = mv;
     else if (strCmp(argc, "./")) *type = run;
     else *type = bin;
 }
@@ -165,12 +167,16 @@ void commandHandler(int type, char* argc, char* argv, char* curDirIndex, char* c
         case bin:
             _bin_(argc);
         case cat:
-            // _cat_();
             interrupt(0x21, 0xFF << 8 | 0x6, "cat", 0x3000, 0);
             break;
         case cp:
-            // _cp_();
             interrupt(0x21, 0xFF << 8 | 0x6, "cp", 0x3000, 0);
+            break;
+        case rm:
+            interrupt(0x21, 0xFF << 8 | 0x6, "rm", 0x3000, 0);
+            break;
+        case mv:
+            interrupt(0x21, 0xFF << 8 | 0x6, "mv", 0x3000, 0);
             break;
         default:
             break;
