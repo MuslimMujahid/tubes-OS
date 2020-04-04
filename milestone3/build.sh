@@ -41,6 +41,11 @@ bcc -ansi -c -o cp.o utility/cp.c
 ld86 -o cp -d cp.o lib_asm.o mat.o text.o fileIO.o folderIO3.o system.o
 echo Compile cat selesai
 
+echo Compile rm
+bcc -ansi -c -o rm.o utility/rm.c
+ld86 -o rm -d rm.o lib_asm.o mat.o text.o fileIO.o folderIO2.o system.o
+echo Compile rm selesai
+
 echo Compile loadFile
 gcc loadFile.c -o loadFile
 echo Compile loadFile selesai
@@ -50,6 +55,8 @@ echo load shell
 ./loadFile shell
 echo load mkdir
 ./loadFile mkdir
+echo load rm
+./loadFile rm
 echo load cat
 ./loadFile cat
 echo load cp

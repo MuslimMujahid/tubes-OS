@@ -6,5 +6,6 @@
 void _cat_();
 void _mkdir_();
 void _cp_();
+void _rm_();
 
 #endif

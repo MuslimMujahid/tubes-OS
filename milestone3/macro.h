@@ -49,5 +49,6 @@
 #define bin 5
 #define cat 6 
 #define cp 7
+#define rm 8
 
 #endif

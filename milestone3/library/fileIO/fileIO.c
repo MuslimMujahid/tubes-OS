@@ -157,6 +157,10 @@ void readFile(char *buffer, char *path, int *result, char parentIndex)
     // *result = 1;
     interrupt(0x21, (parentIndex << 8) | 0x04, buffer, path, result);
 }
+void deleteFile(char *buffer, char *path, int *sector, char parentIndex)
+{
+    interrupt(0x21, (parentIndex << 8) | 0x09, buffer, path, sector);
+}
 
 int isFileExist(char* dirname, char curDirIndex)
 {
