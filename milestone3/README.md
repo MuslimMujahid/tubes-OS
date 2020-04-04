@@ -20,8 +20,26 @@ mkdir *foldername*
 run *filename*
 ```
 
-### Move file or folder
+### Move file
 
 ```shell
-mv *path origin* *path destination*
+mv *origin path* *destination path*
+```
+
+### Remove file or folder in current directory
+
+```shell
+rm *file/folder*
+```
+
+### Print file's content
+
+```shell
+cat *file*
+```
+
+### Copy file
+
+```shell
+cp *filename* *destination path*
 ```
