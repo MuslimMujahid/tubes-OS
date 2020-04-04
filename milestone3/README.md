@@ -4,24 +4,24 @@
 
 ### Show files and folders in current directory
 
-'''shell
+```shell
 ls
-'''
+```
 
 ### Create folder in current directory
 
-'''shell
+```shell
 mkdir *foldername*
-'''
+```
 
 ### Run a runable file
 
-'''shell
+```shell
 run *filename*
-'''
+```
 
 ### Move file or folder
 
-'''shell
+```shell
 mv *path origin* *path destination*
-'''
+```
