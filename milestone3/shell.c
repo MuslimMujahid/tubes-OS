@@ -9,7 +9,7 @@ void autoCompletePath(char* input, char curDirIndex);
 void autoCompleteDirInDir(char* input, char* dirname, char curDirIndex);
 
 void splitArgs(char* input, char* argc, char* argv);
-
+void printPath(char curDirIndex);
 
 // command methods
 void _ls_(char curDirIndex);
@@ -38,8 +38,9 @@ main()
     clear(curPath, 100);
 
     running = 1;
-    curPath[0] = '$'; 
-    curDirIndex = ROOT; // Begin in root
+    // curPath[0] = '$'; 
+    getCurDir(&curDirIndex);
+    // curDirIndex = ROOT; // Begin in root
     while(running)
     {
         curHistory = 0;
@@ -51,74 +52,75 @@ main()
         clear(tmp2, 10);
 
         // Print current directory path
-        pS(curPath, FALSE); pC(' ', FALSE);
+        // pS(curPath, FALSE); pC(' ', FALSE);
+        printPath(curDirIndex);
         interrupt(0x21, (0 << 8) | 0x1, input, &ret, 0);
 
         // History handler
-        if (ret == ARROW)
-        {
-            // Add input to history
-            addHistory(input, history);
+        // if (ret == ARROW)
+        // {
+        //     // Add input to history
+        //     addHistory(input, history);
 
-            if (history[1] != EMPTY)
-            {
-                while (TRUE)
-                {
-                    if (curHistory < 3)
-                    {
-                        for (i = 0; i < len(history + HISTORY_LENGTH*(curHistory)); i++)
-                        {
-                            interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
-                        }
-                    }
-                    else
-                    {
-                        for (i = 0; i < len(history + HISTORY_LENGTH*3); i++)
-                        {
-                            interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
-                        }
-                    }
+        //     if (history[1] != EMPTY)
+        //     {
+        //         while (TRUE)
+        //         {
+        //             if (curHistory < 3)
+        //             {
+        //                 for (i = 0; i < len(history + HISTORY_LENGTH*(curHistory)); i++)
+        //                 {
+        //                     interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
+        //                 }
+        //             }
+        //             else
+        //             {
+        //                 for (i = 0; i < len(history + HISTORY_LENGTH*3); i++)
+        //                 {
+        //                     interrupt(0x10, 0xe*256+0x8, 0, 0, 0);
+        //                 }
+        //             }
                     
-                    if (ret == ARROW)
-                    {
-                        if (curHistory < 3) curHistory++;
-                        else curHistory = 1;
-                    }
+        //             if (ret == ARROW)
+        //             {
+        //                 if (curHistory < 3) curHistory++;
+        //                 else curHistory = 1;
+        //             }
 
-                    pS(history + HISTORY_LENGTH*curHistory, FALSE);
+        //             pS(history + HISTORY_LENGTH*curHistory, FALSE);
                     
-                    clear(input, 100);
-                    interrupt(0x21, 0x01, input, &ret, 0);
+        //             clear(input, 100);
+        //             interrupt(0x21, 0x01, input, &ret, 0);
 
-                    if (ret == '\r') 
-                    {
-                        copy(history + HISTORY_LENGTH*curHistory, input);
-                        break;
-                    }
-                }
-            }
-        }
-        else if (ret == '\t')
-        {
-            if (input[0] == '.' && input[1] == '/')
-            {   
-                autocompleteFileInDir(input, curDirIndex);
-                while (TRUE)
-                {
-                    interrupt(0x21, 0x01, input, &ret, 0);
-                    if (ret != '\t') break;
-                }
-            }
-            else if (input[0] == 'c' && input[1] == 'd' && input[2] == ' ')
-            {
-                autoCompletePath(input, curDirIndex);
-                while (TRUE)
-                {
-                    interrupt(0x21, 0x01, input, &ret, 0);
-                    if (ret != '\t') break;
-                }
-            }
-        }
+        //             if (ret == '\r') 
+        //             {
+        //                 copy(history + HISTORY_LENGTH*curHistory, input);
+        //                 break;
+        //             }
+        //         }
+        //     }
+        // }
+        // else if (ret == '\t')
+        // {
+        //     if (input[0] == '.' && input[1] == '/')
+        //     {   
+        //         autocompleteFileInDir(input, curDirIndex);
+        //         while (TRUE)
+        //         {
+        //             interrupt(0x21, 0x01, input, &ret, 0);
+        //             if (ret != '\t') break;
+        //         }
+        //     }
+        //     else if (input[0] == 'c' && input[1] == 'd' && input[2] == ' ')
+        //     {
+        //         autoCompletePath(input, curDirIndex);
+        //         while (TRUE)
+        //         {
+        //             interrupt(0x21, 0x01, input, &ret, 0);
+        //             if (ret != '\t') break;
+        //         }
+        //     }
+        // }
 
         // Read commandget
         splitArgs(input, argc, argv);
@@ -369,6 +371,7 @@ void _cd_(char* dirname, char* curDirIndex, char* curPath)
         i++;
     }
     *curDirIndex = tmpDirIndex; 
+    putArgs(*curDirIndex, 0, 0);
 }
 
 void _run_(char* filename, char curDirIndex)
@@ -417,4 +420,37 @@ void splitArgs(char* input, char* argc, char* argv)
             copy(input, argc);
         }
     }
+}
+
+void printPath(char curDirIndex)
+{
+    char files[SECTOR_SIZE * 2];
+    char path[128];
+    char tmp[128];
+    char name[MAX_FILENAME_LENGTH];
+    int index;
+    int i;
+
+    clear(path, 128);
+    clear(tmp, 128);
+    clear(name, MAX_FILENAME_LENGTH);
+
+    interrupt(0x21, 0x02, files, FILES_SECTOR_1, 0);
+    interrupt(0x21, 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
+
+
+    while (curDirIndex != ROOT)
+    {
+        clear(tmp, 128);
+        copy(path, tmp);
+        clear(path, 128);
+
+        index = curDirIndex * FILES_COLUMNS;
+        path[0] = '/';
+        copy(files + index + NAME_OFFSET, path + 1);        
+        concat(path, tmp);
+
+        curDirIndex = getParentIndexByCurIndex(curDirIndex);
+    }
+    pC('$', FALSE); pS(path, FALSE); pC(' ', FALSE);
 }
