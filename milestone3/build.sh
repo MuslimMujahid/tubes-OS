@@ -17,7 +17,7 @@ bcc -ansi -c -o utility.o utility/utility.c
 bcc -ansi -c -o system.o library/system/system.c
 echo Done
 nasm -f as86 kernel.asm -o kernel_asm.o
-ld86 -o kernel -d kernel.o kernel_asm.o mat.o text.o fileIO.o folderIO.o folderIO2.o system.o 
+ld86 -o kernel -d kernel.o kernel_asm.o mat.o text.o folderIO.o folderIO2.o system.o 
 dd if=kernel of=system.img bs=512 conv=notrunc seek=3
 echo Compile kernel selesai
 
