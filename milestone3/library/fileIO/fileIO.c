@@ -2,160 +2,78 @@
 
 void writeFile(char *buffer, char *path, int *sector, char parentIndex)
 {
-    // int i, j;
-    // char map[SECTOR_SIZE];
-    // char files[SECTOR_SIZE * 2];
-    // char sectors[SECTOR_SIZE];
-    // int fileIndex;
-    // int sectorindex;
-    // int empty_sector;
-    // int sectorId, sectorCount;
-    // char tmp_buff[SECTOR_SIZE];
-
-    // // Read sector map, files, and sectors
-    // interrupt(0x21, 0x02, map, MAP_SECTOR, 0);
-    // interrupt(0x21, 0x02, files, FILES_SECTOR_1, 0);
-    // interrupt(0x21, 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
-    // interrupt(0x21, 0x02, sectors, SECTORS_SECTOR, 0);
-
-
-    // // Find file in parentIndex
-    // fileIndex = findFilenameInDir(path, parentIndex);
-    // if (fileIndex != FILE_NOT_FOUND) // file already exist
-    // {
-    //     *sector = FILE_EXIST;
-    //     return;
-    // }
-
-    // // Check if there enough space to store file
-    // for (i = 0, empty_sector = 0; i < MAX_BYTE && empty_sector < *sector; i++)
-    // {
-    //     if (map[i] != USED)
-    //         empty_sector++;
-    // }
-    // if (i == MAX_BYTE)
-    // {
-    //     *sector = SECTORS_FULL;
-    //     return;
-    // }
-
-    // // find a free entry in the files
-    // for (i = 0; i < SECTOR_SIZE * 2; i += FILES_COLUMNS)
-    //     if (files[i + NAME_OFFSET] == EMPTY) break;
-    // if (i == SECTOR_SIZE * 2)
-    // {
-    //     *sector = FILES_FULL;
-    //     return;
-    // }
-    // fileIndex = i;
-
-    // // find a free sectors entry
-    // for (i = 0; i < SECTOR_SIZE; i += SECTORS_COLUMNS)
-    //     if (sectors[i] == EMPTY) break;
-    // if (i == SECTOR_SIZE)
-    // {
-    //     *sector = SECTORS_FULL;
-    //     return;
-    // }
-    // sectorindex = i;
-
-    // // Put files in the parentIndex
-    // files[fileIndex] = parentIndex;
-
-    // // Point the files to the sector
-    // // if its a directory then set S to 0xFF
-    // if (buffer == 0)
-    // {
-    //     files[fileIndex + 1] = DIR;
-    // }
-    // else
-    // {
-    //     files[fileIndex + 1] = sectorindex >> 0x4;
-    // }
-    
-
-    // // Clear memory that will be used to store filename
-    // clear(files + fileIndex + NAME_OFFSET, MAX_FILENAME_LENGTH);
-
-    // // Store filename
-    // i = 0, j = 0;
-    // while (path[i] != '\0' && i < MAX_FILENAME_LENGTH) i++;
-    // while (path[i] != '/' && i > 0) i--;
-    // if (path[i] == '/') i += 1;
-    // while (path[i] != '\0' && j < MAX_FILENAME_LENGTH)
-    //     files[fileIndex + NAME_OFFSET + j++] = path[i++];
-
-    // // Store file 
-    // pS("start loop", TRUE);
-    // pI(*sector, TRUE);
-    // for (sectorId = 0, sectorCount = 0; sectorId < MAX_BYTE && sectorCount < *sector; sectorId++)
-    // {
-    //     pS("loop", TRUE);
-    //     if (map[sectorId] == EMPTY)
-    //     {
-    //         pS("Kosong", TRUE);
-    //         // Mark sector as used
-    //         map[sectorId] = USED;
-
-    //         // Put sectorId to sectors correspondent to files
-    //         sectors[sectorindex + sectorCount] = sectorId;
-        
-    //         // clear temp buffer
-    //         clear(tmp_buff, SECTOR_SIZE);
-
-    //         // Write to the empty sector
-    //         for (i = 0; i < SECTOR_SIZE; i++)
-    //             tmp_buff[i] = buffer[sectorCount * SECTOR_SIZE + i];
-
-    //         interrupt(0x21, 0x03, tmp_buff, sectorId, 0);
-    //         pS("Masuk", TRUE);
-    //         pS(tmp_buff, TRUE);
-
-    //         sectorCount++;
-    //     }
-    // }
-
-    // // Write to system
-    // interrupt(0x21, 0x03, map, MAP_SECTOR, 0);
-    // interrupt(0x21, 0x03, files, FILES_SECTOR_1, 0);
-    // interrupt(0x21, 0x03, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
-    // interrupt(0x21, 0x03, sectors, SECTORS_SECTOR, 0);
-
-    // *sector = 1;
     interrupt(0x21, (parentIndex << 8) | 0x05, buffer, path, sector);
-
 }
 
 void readFile(char *buffer, char *path, int *result, char parentIndex)
 {
-    // int i;
-    // char map[SECTOR_SIZE], files[SECTOR_SIZE * 2], sectors[SECTOR_SIZE];
-    // int fileIndex;
-    // int sectorIndex;    
-
-    // // Read sector map, files, and sectors
-    // interrupt(0x21, 0x02, map, MAP_SECTOR, 0);
-    // interrupt(0x21, 0x02, files, FILES_SECTOR_1, 0);
-    // interrupt(0x21, 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
-    // interrupt(0x21, 0x02, sectors, SECTORS_SECTOR, 0);
-
-    // // Find filename in parentIndex
-    // fileIndex = findFilenameInDir(path, parentIndex);
-    // if (fileIndex == FILE_NOT_FOUND) // file not found
-    // {
-    //     *result = FILE_NOT_FOUND;
-    //     return;
-    // }
-
-    // // Load file to buffer
-    // sectorIndex = files[fileIndex + 1] * SECTORS_COLUMNS;
-    // for (i = 0; i < FILES_COLUMNS && sectors[sectorIndex + i] != EMPTY; i++)
-    // {
-    //     // readSector(buffer + i*SECTOR_SIZE, sectors[sectorIndex + i]);
-    //     interrupt(0x21, 0x02, buffer + i*SECTOR_SIZE, sectors[sectorIndex + i], 0);
-    // }
-    // *result = 1;
     interrupt(0x21, (parentIndex << 8) | 0x04, buffer, path, result);
+}
+
+void deleteFile(char *filename, char parentIndex)
+{
+    int i;
+    char map[SECTOR_SIZE];
+    char files[SECTOR_SIZE * 2];
+    char sectors[SECTOR_SIZE];
+    int fileIndex;
+    int sectorindex;
+
+    // Read sector map, files, and sectors
+    interrupt(0x21, 0x02, map, MAP_SECTOR, 0);
+    interrupt(0x21, 0x02, files, FILES_SECTOR_1, 0);
+    interrupt(0x21, 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
+    interrupt(0x21, 0x02, sectors, SECTORS_SECTOR, 0);
+
+    fileIndex = findIndex(filename, parentIndex, FALSE, TRUE) * FILES_COLUMNS;
+    sectorindex = files[fileIndex + 1] * SECTORS_COLUMNS;
+    
+    i = 0;
+    while (sectors[sectorindex + i] != EMPTY)
+    {
+        map[sectors[sectorindex + i]] = EMPTY;
+        sectors[sectorindex + i] = EMPTY;
+        i++;
+    }
+    clear(files + fileIndex, FILES_COLUMNS);
+
+    // Write to system
+    interrupt(0x21, 0x03, map, MAP_SECTOR, 0);
+    interrupt(0x21, 0x03, files, FILES_SECTOR_1, 0);
+    interrupt(0x21, 0x03, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
+    interrupt(0x21, 0x03, sectors, SECTORS_SECTOR, 0);
+}
+
+void moveFile(char* filename, char parentIndex, char newParentIndex)
+{
+    char files[SECTOR_SIZE * 2];
+    int fileIndex;
+
+    // Read sector map, files, and sectors
+    interrupt(0x21, 0x02, files, FILES_SECTOR_1, 0);
+    interrupt(0x21, 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
+
+    fileIndex = findIndex(filename, parentIndex, FALSE, TRUE) * FILES_COLUMNS;
+    files[fileIndex] = newParentIndex;
+
+    // Write to system
+    interrupt(0x21, 0x03, files, FILES_SECTOR_1, 0);
+    interrupt(0x21, 0x03, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
+}
+
+void copyFile(char* filename, char parentIndex, char newParentIndex)
+{
+    char buffer[FILE_SIZE];
+    int sector;
+
+    clear(buffer, FILE_SIZE);
+
+    readFile(buffer, filename, 0, parentIndex);
+
+    sector = len(buffer) >> 0x8;
+    if (mod(len(buffer), SECTOR_SIZE) > 0) sector++;
+
+    writeFile(buffer, filename, sector, newParentIndex);
 }
 
 int isFileExist(char* dirname, char curDirIndex)

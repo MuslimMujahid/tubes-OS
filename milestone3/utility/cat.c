@@ -17,7 +17,7 @@ main()
     if (!isFileExist(filename, parentIndex))
     {
         pS(" There is no such file or directory!", TRUE);
-        return;
+        terminate();
     }
     readFile(buffer, filename, 0, parentIndex);
 

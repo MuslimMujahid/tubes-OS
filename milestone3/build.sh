@@ -28,18 +28,28 @@ echo Compile shell selesai
 
 echo Compile mkdir
 bcc -ansi -c -o mkdir.o utility/mkdir.c
-ld86 -o mkdir -d mkdir.o lib_asm.o mat.o text.o fileIO.o folderIO2.o system.o
+ld86 -o mkdir -d mkdir.o lib_asm.o mat.o text.o fileIO.o folderIO2.o folderIO3.o system.o
 echo Compile mkdir selesai
 
 echo Compile cat
 bcc -ansi -c -o cat.o utility/cat.c
-ld86 -o cat -d cat.o lib_asm.o mat.o text.o fileIO.o system.o
+ld86 -o cat -d cat.o lib_asm.o mat.o text.o fileIO.o folderIO3.o system.o
 echo Compile cat selesai
 
 echo Compile cp
 bcc -ansi -c -o cp.o utility/cp.c
-ld86 -o cp -d cp.o lib_asm.o mat.o text.o fileIO.o folderIO3.o system.o
-echo Compile cat selesai
+ld86 -o cp -d cp.o lib_asm.o mat.o text.o fileIO.o folderIO.o folderIO2.o folderIO3.o system.o
+echo Compile cp selesai
+
+echo Compile rm
+bcc -ansi -c -o rm.o utility/rm.c
+ld86 -o rm -d rm.o lib_asm.o mat.o text.o fileIO.o folderIO.o folderIO2.o folderIO3.o system.o
+echo Compile rm selesai
+
+echo Compile mv
+bcc -ansi -c -o mv.o utility/mv.c
+ld86 -o mv -d mv.o lib_asm.o mat.o text.o fileIO.o folderIO.o folderIO2.o folderIO3.o system.o
+echo Compile mv selesai
 
 echo Compile loadFile
 gcc loadFile.c -o loadFile
@@ -54,6 +64,10 @@ echo load cat
 ./loadFile cat
 echo load cp
 ./loadFile cp
+echo load rm
+./loadFile rm
+echo load mv
+./loadFile mv
 echo load test.txt
 ./loadFile test.txt
 echo load file selasai
