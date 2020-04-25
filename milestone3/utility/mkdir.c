@@ -16,6 +16,7 @@ main()
         terminate();
     }
     
-    writeFile(0, dirname, 0, parentIndex);
+    // writeFile(0, dirname, 0, parentIndex);
+    createDir(dirname, parentIndex);
     terminate();
 }

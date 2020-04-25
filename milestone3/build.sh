@@ -14,7 +14,6 @@ bcc -ansi -c -o folderIO.o library/folderIO/folderIO.c
 bcc -ansi -c -o folderIO2.o library/folderIO/folderIO2.c
 bcc -ansi -c -o folderIO3.o library/folderIO/folderIO3.c
 bcc -ansi -c -o fileIO.o library/fileIO/fileIO.c
-bcc -ansi -c -o utility.o utility/utility.c
 bcc -ansi -c -o system.o library/system/system.c
 nasm -f as86 kernel.asm -o kernel_asm.o
 ld86 -o kernel -d kernel.o kernel_asm.o mat.o text.o folderIO.o folderIO2.o system.o 
@@ -29,12 +28,12 @@ echo Compile shell selesai
 
 echo Compile mkdir
 bcc -ansi -c -o mkdir.o utility/mkdir.c
-ld86 -o mkdir -d mkdir.o lib_asm.o mat.o text.o fileIO.o folderIO2.o folderIO3.o system.o
+ld86 -o mkdir -d mkdir.o lib_asm.o mat.o text.o fileIO.o folderIO.o folderIO2.o folderIO3.o system.o
 echo Compile mkdir selesai
 
 echo Compile cat
 bcc -ansi -c -o cat.o utility/cat.c
-ld86 -o cat -d cat.o lib_asm.o mat.o text.o fileIO.o folderIO3.o system.o
+ld86 -o cat -d cat.o lib_asm.o mat.o text.o fileIO.o folderIO2.o folderIO3.o system.o
 echo Compile cat selesai
 
 echo Compile cp

@@ -16,7 +16,7 @@ main()
     if (path[i] == '/') i++;
     
     /* find index and parent index of file/directory */
-    index = findIndex(path + i, parentIndex);
+    index = pathFindIndex(path, parentIndex);
     parentIndex = getParentIndexByCurIndex(index);
 
     /* Delete file/directory */

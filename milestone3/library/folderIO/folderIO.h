@@ -3,7 +3,7 @@
 
 #include "../../macro.h"
 
-void createrDir(char* dirname, char parentIndex);
+void createDir(char* dirname, char parentIndex);
 void deleteDir(char* dirname, char parentIndex);
 void deleteAllinDir(char* dirname, char parentIndex);
 void copyDir(char* dirname, char parentIndex, char newParentIndex);

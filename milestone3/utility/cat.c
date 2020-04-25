@@ -17,8 +17,9 @@ main()
     while(path[i] != '/' && i > 0) i--;
     if (path[i] == '/') i++;
 
-    // index = pathFindIndex(path, parentIndex); 
-    // parentIndex = getParentIndexByCurIndex(index);
+    index = pathFindIndex(path, parentIndex, FALSE, TRUE); 
+    parentIndex = getParentIndexByCurIndex(index);
+    pS("selesai", TRUE);
 
     /* read file */
     if (!isFileExist(path + i, parentIndex))

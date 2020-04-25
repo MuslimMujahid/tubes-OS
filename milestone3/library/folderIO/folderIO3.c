@@ -35,11 +35,15 @@ int pathFindIndex(char* path, char parentIndex, int isDir, int isFile)
         if (path[i] == '/')
         {
             j = 0;
-            parentIndex = findIndex(name, parentIndex, TRUE, FALSE);
+            if (strCmpMax(name, "..")) {
+                parentIndex = getParentIndexByCurIndex(parentIndex);
+            } else {
+                parentIndex = pathFindIndex(name, parentIndex, TRUE, FALSE);
 
-            if (parentIndex == FILE_NOT_FOUND)
-            {
-                return FILE_NOT_FOUND;
+                if (parentIndex == FILE_NOT_FOUND)
+                {
+                    return FILE_NOT_FOUND;
+                }
             }
 
             clear(name, MAX_FILENAME_LENGTH);

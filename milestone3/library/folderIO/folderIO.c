@@ -1,6 +1,6 @@
 #include "folderIO.h"
 
-void createrDir(char* dirname, char parentIndex)
+void createDir(char* dirname, char parentIndex)
 {
     interrupt(0x21, (parentIndex << 8) | 0x5, 0, dirname, 0);
 }
@@ -61,7 +61,7 @@ void copyDir(char* dirname, char parentIndex, char newParentIndex)
     int index;
     char files[SECTOR_SIZE * 2];
 
-    createrDir(dirname, newParentIndex);
+    createDir(dirname, newParentIndex);
 
     clear(files, SECTOR_SIZE * 2);
     interrupt(0x21, 0x03, files, FILES_SECTOR_1, 0); 
@@ -102,6 +102,23 @@ void copyAllInDir(char* dirname, char parentIndex, char newParentIndex)
             }
         }
     }
+}
+
+void moveDir(char* filename, char parentIndex, char newParentIndex)
+{
+    char files[SECTOR_SIZE * 2];
+    int fileIndex;
+
+    // Read sector map, files, and sectors
+    interrupt(0x21, 0x02, files, FILES_SECTOR_1, 0);
+    interrupt(0x21, 0x02, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
+
+    fileIndex = findIndex(filename, parentIndex, TRUE, FALSE) * FILES_COLUMNS;
+    files[fileIndex] = newParentIndex;
+
+    // Write to system
+    interrupt(0x21, 0x03, files, FILES_SECTOR_1, 0);
+    interrupt(0x21, 0x03, files + SECTOR_SIZE, FILES_SECTOR_2, 0);
 }
 
 void getListContent(char* listContent, char parentIndex)

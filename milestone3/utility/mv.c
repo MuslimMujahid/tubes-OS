@@ -23,19 +23,13 @@ main()
     newParentIndex = findIndex(destPath, parentIndex, TRUE, FALSE);
     parentIndex = getParentIndexByCurIndex(index);
 
-    /* Add filename to destPath */
-    destPath[len(destPath)] = '/';
-    concat(destPath, oriPath + i);
-
     if (isFileExist(oriPath + i, parentIndex))
     {
         moveFile(oriPath + i, parentIndex, newParentIndex);
     }
     else if (isDirExist(oriPath + i, parentIndex))
     {
-        
-        writeFile(0, destPath, 0, parentIndex);
-        deleteDir(oriPath + i, parentIndex);
+        moveDir(oriPath + i, parentIndex, newParentIndex);
     }
     else
     {
